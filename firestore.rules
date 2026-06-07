@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Cada usuario (UID anónimo o autenticado) solo accede a sus propios datos.
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Movimientos contables (ingresos / egresos)
+      match /movimientos/{id} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+      // Categorías personalizadas
+      match /categorias/{id} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}

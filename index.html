@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Finanzas Sonqollay</title>
+  <meta name="description" content="Contabilidad general de la consultora Sonqollay" />
+  <meta name="theme-color" content="#F77000" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="logo.png" />
+  <link rel="apple-touch-icon" href="logo.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <img src="logo.png" alt="Sonqollay" class="brand-logo" />
+      <div class="brand-text">
+        <strong>Finanzas</strong>
+        <span>Sonqollay</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" data-view="dashboard"><span class="ico">▦</span> Resumen</button>
+      <button class="nav-item" data-view="movimientos"><span class="ico">↹</span> Movimientos</button>
+      <button class="nav-item" data-view="flujo"><span class="ico">▤</span> Flujo de caja</button>
+      <button class="nav-item" data-view="categorias"><span class="ico">◑</span> Por categoría</button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="sync-state" id="syncState" title="Estado de datos">
+        <span class="dot"></span><span id="syncLabel">Modo local</span>
+      </div>
+      <button class="btn-ghost sm" id="installBtn" hidden>Instalar app</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn only-mobile" id="menuBtn" aria-label="Menú">☰</button>
+      <div class="period">
+        <button class="icon-btn" id="prevMonth" aria-label="Mes anterior">‹</button>
+        <h1 id="periodLabel">—</h1>
+        <button class="icon-btn" id="nextMonth" aria-label="Mes siguiente">›</button>
+        <button class="btn-ghost sm" id="todayBtn">Hoy</button>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-ghost sm" id="exportBtn" title="Exportar CSV">Exportar</button>
+        <button class="btn-primary" id="newBtn">+ Movimiento</button>
+      </div>
+    </header>
+
+    <div class="content" id="content"><!-- vistas inyectadas por app.js --></div>
+  </main>
+
+  <!-- Modal movimiento -->
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <h2 id="modalTitle">Nuevo movimiento</h2>
+        <button class="icon-btn" id="modalClose" aria-label="Cerrar">✕</button>
+      </div>
+      <form id="movForm" class="modal-body">
+        <input type="hidden" id="f_id" />
+        <div class="seg">
+          <label class="seg-opt income">
+            <input type="radio" name="tipo" value="ingreso" checked /> <span>Ingreso</span>
+          </label>
+          <label class="seg-opt expense">
+            <input type="radio" name="tipo" value="egreso" /> <span>Egreso</span>
+          </label>
+        </div>
+        <div class="grid2">
+          <label class="field">Fecha
+            <input type="date" id="f_fecha" required />
+          </label>
+          <label class="field">Monto (CLP)
+            <input type="number" id="f_monto" min="0" step="1" inputmode="numeric" placeholder="0" required />
+          </label>
+        </div>
+        <label class="field">Categoría
+          <select id="f_categoria" required></select>
+        </label>
+        <label class="field">Descripción
+          <input type="text" id="f_descripcion" maxlength="120" placeholder="Ej. Cotización adjudicada Arcadis" />
+        </label>
+        <div class="grid2">
+          <label class="field">Contraparte
+            <input type="text" id="f_contraparte" maxlength="80" placeholder="Cliente / proveedor" />
+          </label>
+          <label class="field">Documento
+            <input type="text" id="f_documento" maxlength="40" placeholder="Factura / boleta N°" />
+          </label>
+        </div>
+        <div class="grid2">
+          <label class="field">Medio de pago
+            <select id="f_medio">
+              <option>Transferencia</option>
+              <option>Efectivo</option>
+              <option>Tarjeta</option>
+              <option>Cheque</option>
+              <option>Otro</option>
+            </select>
+          </label>
+          <label class="field">Estado
+            <select id="f_estado">
+              <option value="pagado">Pagado / Cobrado</option>
+              <option value="pendiente">Pendiente</option>
+            </select>
+          </label>
+        </div>
+        <label class="check">
+          <input type="checkbox" id="f_iva" /> Afecto a IVA (19%)
+        </label>
+        <div class="modal-foot">
+          <button type="button" class="btn-ghost danger" id="deleteBtn" hidden>Eliminar</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn-ghost" id="cancelBtn">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
