@@ -944,8 +944,8 @@ document.addEventListener('visibilitychange', () => {
 // ── Notificaciones inteligentes (local; Cloud Functions en Modo nube) ───────────
 async function showNotif(title, body, tag, actions) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  try { const reg = await navigator.serviceWorker.getRegistration(); if (reg?.showNotification) return reg.showNotification(title, { body, tag, icon: 'logo.png', badge: 'logo.png', actions: actions || [] }); } catch {}
-  try { new Notification(title, { body, tag, icon: 'logo.png' }); } catch {}
+  try { const reg = await navigator.serviceWorker.getRegistration(); if (reg?.showNotification) return reg.showNotification(title, { body, tag, icon: 'icon-192.png', badge: 'icon-192.png', actions: actions || [] }); } catch {}
+  try { new Notification(title, { body, tag, icon: 'icon-192.png' }); } catch {}
 }
 const mondayOf = (d) => { const x = new Date(d); const day = (x.getDay() + 6) % 7; x.setDate(x.getDate() - day); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; };
 function rangeTotals(from, to) {

@@ -1,12 +1,11 @@
 // Service worker — cache de shell para offline.
-const CACHE = 'finanzas-sonqollay-v10';
+const CACHE = 'finanzas-sonqollay-v11';
 const ASSETS = [
   './',
   './index.html',
   './app.js',
   './styles.css',
   './manifest.webmanifest',
-  './logo.png',
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png',

@@ -13,8 +13,8 @@ try {
     const n = payload.notification || {};
     self.registration.showNotification(n.title || 'Finanzas Sonqollay', {
       body: n.body || 'Tenés cobros o pagos pendientes.',
-      icon: 'logo.png',
-      badge: 'logo.png',
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
     });
   });
 } catch (e) {

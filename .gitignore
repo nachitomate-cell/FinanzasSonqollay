@@ -1,4 +1,5 @@
 node_modules/
+dev-server.mjs
 firebase-config-compat.js
 .firebase/
 *.log

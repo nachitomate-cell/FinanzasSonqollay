@@ -126,5 +126,5 @@ firebase-config.example.js · firebase-config-compat.example.js   plantillas
 firestore.rules         reglas de seguridad (datos por usuario)
 firebase.json / .firebaserc  hosting + firestore + functions
 functions/              Cloud Function de recordatorios (dailyDueReminders)
-logo.png                logo de marca
+icon-*.png              iconos de marca (192/512 + maskable) y apple-touch-icon
 ```
