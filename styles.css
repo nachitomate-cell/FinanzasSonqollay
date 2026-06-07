@@ -15,14 +15,31 @@
   --expense-bg: #fcebea;
   --warn: #c98a00;
   --radius: 14px;
-  --shadow: 0 1px 2px rgba(20,30,45,.06), 0 8px 24px rgba(20,30,45,.06);
+  --shadow: 0 1px 2px rgba(20,30,45,.05), 0 6px 20px rgba(20,30,45,.06);
+  --shadow-lg: 0 10px 30px rgba(20,30,45,.12);
   --sidebar-w: 248px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; }
+html { -webkit-text-size-adjust: 100%; }
+
+/* Iconos SVG */
+.ic { width: 21px; height: 21px; flex: 0 0 auto; stroke-width: 2; }
+.btn-ghost .ic, .btn-primary .ic { width: 17px; height: 17px; vertical-align: -3px; margin-right: 2px; }
+.icon-btn .ic { width: 20px; height: 20px; }
+
+/* Animaciones */
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes sheetUp { from { transform: translateY(20px); opacity: .3 } to { transform: none; opacity: 1 } }
+@keyframes sheetUpM { from { transform: translateY(100%) } to { transform: none } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+@keyframes toastUp { from { opacity: 0; transform: translate(-50%, 12px) } to { opacity: 1; transform: translate(-50%, 0) } }
+@keyframes shimmer { 100% { background-position: 200% 0 } }
+@keyframes pop { 0% { transform: scale(.85) } 60% { transform: scale(1.05) } 100% { transform: scale(1) } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 body {
   display: flex; min-height: 100dvh; color: var(--ink); background: var(--bg);
   -webkit-font-smoothing: antialiased;
@@ -360,6 +377,45 @@ td.amount.out { color: var(--expense); }
 .lock-pad button:active { background: rgba(255,255,255,.25); }
 .lock-pad button.flat { background: transparent; font-size: 15px; }
 .lock-bio { background: transparent; color: #fff; border-color: rgba(255,255,255,.3); }
+
+/* ── Aplicación de animaciones ── */
+.modal-backdrop:not([hidden]) { animation: fadeIn .18s ease; }
+.modal-backdrop:not([hidden]) > .modal { animation: sheetUp .28s cubic-bezier(.22,1,.36,1); }
+.img-viewer:not([hidden]) { animation: fadeIn .2s ease; }
+.lock:not([hidden]) { animation: fadeIn .22s ease; }
+.toast:not([hidden]) { animation: toastUp .25s ease; }
+.content.view-anim > * { animation: rise .36s cubic-bezier(.22,1,.36,1) both; }
+.content.view-anim > *:nth-child(2) { animation-delay: .04s; }
+.content.view-anim > *:nth-child(3) { animation-delay: .08s; }
+.content.view-anim > *:nth-child(4) { animation-delay: .12s; }
+.content.view-anim > *:nth-child(5) { animation-delay: .16s; }
+.content.view-anim > *:nth-child(n+6) { animation-delay: .2s; }
+.fab { transition: transform .12s ease, background .15s, box-shadow .15s; }
+.kpi, .card, .mitem, .btn-primary, .btn-ghost { transition: transform .12s ease, box-shadow .15s ease, border-color .15s; }
+.kpi:active, .card:active { transform: scale(.99); }
+
+/* Iconos en navegación / botones */
+.bn-item .ic { width: 23px; height: 23px; }
+.mi-ic .ic { width: 18px; height: 18px; }
+.h-pill .ic { width: 14px; height: 14px; }
+
+/* ── Hero de balance (estilo banca) ── */
+.hero { position: relative; overflow: hidden; color: #fff; border-radius: 18px; padding: 18px 20px;
+  background: linear-gradient(135deg, #2f3b49 0%, #586878 60%, #687a8a 100%); box-shadow: var(--shadow-lg); margin-bottom: 16px; }
+.hero::after { content: ""; position: absolute; right: -50px; top: -50px; width: 180px; height: 180px;
+  background: radial-gradient(circle, rgba(247,112,0,.4), transparent 70%); pointer-events: none; }
+.hero .h-label { font-size: 13px; color: #c7d2dd; display: flex; align-items: center; gap: 7px; position: relative; }
+.hero .h-bal { font-size: 34px; font-weight: 800; letter-spacing: -1px; margin: 5px 0 2px; font-variant-numeric: tabular-nums; position: relative; }
+.hero .h-eq { font-size: 12.5px; color: #aebccb; position: relative; }
+.hero .h-pills { display: flex; gap: 10px; margin-top: 15px; position: relative; }
+.hero .h-pill { flex: 1; background: rgba(255,255,255,.12); border-radius: 13px; padding: 10px 12px; }
+.hero .h-pill .pl { font-size: 11.5px; color: #cdd8e2; display: flex; align-items: center; gap: 5px; }
+.hero .h-pill .pv { font-size: 16px; font-weight: 700; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.hero .up { color: #63e6a4; } .hero .down { color: #ff9d99; }
+
+/* ── Skeleton de carga ── */
+.skeleton { background: linear-gradient(90deg, #eef1f5 25%, #e3e8ee 37%, #eef1f5 63%); background-size: 200% 100%; animation: shimmer 1.3s infinite; border-radius: 7px; color: transparent !important; display: inline-block; min-width: 64px; height: 1em; }
+@media (max-width: 820px) { .modal-backdrop:not([hidden]) > .modal { animation: sheetUpM .32s cubic-bezier(.22,1,.36,1); } }
 
 /* ── Responsive / mobile-first (el cliente usa el teléfono ~80%) ── */
 @media (max-width: 820px) {

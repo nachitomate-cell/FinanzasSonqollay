@@ -13,6 +13,9 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="logo.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -26,10 +29,10 @@
       </div>
     </div>
     <nav class="nav">
-      <button class="nav-item active" data-view="dashboard"><span class="ico">▦</span> Resumen</button>
-      <button class="nav-item" data-view="movimientos"><span class="ico">↹</span> Movimientos</button>
-      <button class="nav-item" data-view="flujo"><span class="ico">▤</span> Flujo de caja</button>
-      <button class="nav-item" data-view="categorias"><span class="ico">◑</span> Por categoría</button>
+      <button class="nav-item active" data-view="dashboard"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v2"/><path d="M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/><path d="M18 12a2 2 0 0 0 0 4h3v-4z"/></svg> Resumen</button>
+      <button class="nav-item" data-view="movimientos"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg> Movimientos</button>
+      <button class="nav-item" data-view="flujo"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7" rx="1"/><rect x="12" y="6" width="3" height="11" rx="1"/><rect x="17" y="13" width="3" height="4" rx="1"/></svg> Flujo de caja</button>
+      <button class="nav-item" data-view="categorias"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg> Por categoría</button>
     </nav>
     <div class="sidebar-foot">
       <div class="sync-state" id="syncState" title="Estado de datos">
@@ -44,17 +47,17 @@
     <header class="topbar">
       <img src="logo.png" alt="Sonqollay" class="topbar-logo only-mobile" />
       <div class="period">
-        <button class="icon-btn" id="prevMonth" aria-label="Mes anterior">‹</button>
+        <button class="icon-btn" id="prevMonth" aria-label="Mes anterior"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
         <h1 id="periodLabel">—</h1>
-        <button class="icon-btn" id="nextMonth" aria-label="Mes siguiente">›</button>
+        <button class="icon-btn" id="nextMonth" aria-label="Mes siguiente"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
         <button class="btn-ghost sm" id="todayBtn">Hoy</button>
       </div>
       <div class="topbar-actions">
         <span class="sync-chip only-mobile" id="syncChip"><span class="dot"></span>Local</span>
-        <button class="icon-btn" id="cfgBtn" title="Ajustes">⚙</button>
-        <button class="icon-btn" id="bellBtn" title="Activar recordatorios">🔔</button>
+        <button class="icon-btn" id="cfgBtn" title="Ajustes" aria-label="Ajustes"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+        <button class="icon-btn" id="bellBtn" title="Activar recordatorios" aria-label="Recordatorios"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
         <div class="menu-wrap">
-          <button class="btn-ghost sm" id="exportBtn" title="Exportar">Exportar ▾</button>
+          <button class="btn-ghost sm" id="exportBtn" title="Exportar"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Exportar</button>
           <div class="menu" id="exportMenu" hidden>
             <button type="button" data-exp="csv">CSV</button>
             <button type="button" data-exp="xlsx">Excel (.xlsx)</button>
@@ -70,14 +73,14 @@
 
   <!-- Navegación inferior (móvil) -->
   <nav class="bottom-nav" id="bottomNav">
-    <button class="bn-item active" data-view="dashboard"><span>▦</span>Resumen</button>
-    <button class="bn-item" data-view="movimientos"><span>↹</span>Movim.</button>
-    <button class="bn-item" data-view="flujo"><span>▤</span>Flujo</button>
-    <button class="bn-item" data-view="categorias"><span>◑</span>Categ.</button>
+    <button class="bn-item active" data-view="dashboard"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v2"/><path d="M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/><path d="M18 12a2 2 0 0 0 0 4h3v-4z"/></svg>Resumen</button>
+    <button class="bn-item" data-view="movimientos"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>Movim.</button>
+    <button class="bn-item" data-view="flujo"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7" rx="1"/><rect x="12" y="6" width="3" height="11" rx="1"/><rect x="17" y="13" width="3" height="4" rx="1"/></svg>Flujo</button>
+    <button class="bn-item" data-view="categorias"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>Categ.</button>
   </nav>
 
   <!-- Botón flotante (móvil) -->
-  <button class="fab" id="fab" aria-label="Nuevo movimiento">+</button>
+  <button class="fab" id="fab" aria-label="Nuevo movimiento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
 
   <!-- Modal movimiento -->
   <div class="modal-backdrop" id="modal" hidden>

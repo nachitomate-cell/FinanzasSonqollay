@@ -121,10 +121,11 @@ async function loadIndicadores() {
   if (!modal.hidden) updateConvHint();
 }
 function tickerHTML() {
+  const sk = '<b class="skeleton">000.000</b>';
   return `<div class="ticker" id="ticker" title="Tocar para actualizar">
-    <div class="tk"><span class="lbl">USD</span> <b>${indic.dolar ? fmtFX(indic.dolar) : '—'}</b></div>
-    <div class="tk uf"><span class="lbl">UF</span> <b>${indic.uf ? fmtFX(indic.uf) : '—'}</b></div>
-    <span class="tk-date">${indic.fechaUf ? 'al ' + ddmm(indic.fechaUf) : 'sin conexión'}</span>
+    <div class="tk"><span class="lbl">USD</span> ${indic.dolar ? '<b>' + fmtFX(indic.dolar) + '</b>' : sk}</div>
+    <div class="tk uf"><span class="lbl">UF</span> ${indic.uf ? '<b>' + fmtFX(indic.uf) + '</b>' : sk}</div>
+    <span class="tk-date">${indic.fechaUf ? 'al ' + ddmm(indic.fechaUf) : 'cargando…'}</span>
   </div>`;
 }
 
@@ -173,8 +174,14 @@ const catColor = (nombre) => state.categorias.find(c => c.nombre === nombre)?.co
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const content = $('#content');
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const SVG = (paths, sw) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw||2.4}" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+const ICON = {
+  up: SVG('<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>'),
+  down: SVG('<line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/>'),
+};
 
 function render() {
+  content.classList.remove('view-anim');
   $('#periodLabel').textContent = `${MESES[state.ref.getMonth()]} ${state.ref.getFullYear()}`;
   document.querySelectorAll('.nav-item, .bn-item').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
   ({ dashboard: renderDashboard, movimientos: renderMovimientos, flujo: renderFlujo, categorias: renderCategorias }[state.view])();
@@ -187,12 +194,19 @@ function renderDashboard() {
   const rem = reminders();
 
   content.innerHTML = `
+    <div class="hero">
+      <div class="h-label">Balance de ${MESES[state.ref.getMonth()]}</div>
+      <div class="h-bal">${fmt(t.balance)}</div>
+      <div class="h-eq">≈ ${eqUSD(t.balance)} · ${eqUF(t.balance)}</div>
+      <div class="h-pills">
+        <div class="h-pill"><div class="pl">${ICON.up}Ingresos</div><div class="pv up">${fmt(t.tIn)}</div></div>
+        <div class="h-pill"><div class="pl">${ICON.down}Egresos</div><div class="pv down">${fmt(t.tOut)}</div></div>
+      </div>
+    </div>
     ${tickerHTML()}
-    <div class="kpis">
-      <div class="kpi income"><div class="label"><span class="tag"></span>Ingresos del mes</div><div class="value">${fmt(t.tIn)}</div><div class="sub">≈ ${eqUSD(t.tIn)} · ${eqUF(t.tIn)}</div></div>
-      <div class="kpi expense"><div class="label"><span class="tag"></span>Egresos del mes</div><div class="value">${fmt(t.tOut)}</div><div class="sub">≈ ${eqUSD(t.tOut)} · ${eqUF(t.tOut)}</div></div>
-      <div class="kpi balance"><div class="label"><span class="tag"></span>Balance neto</div><div class="value" style="color:${t.balance>=0?'var(--income)':'var(--expense)'}">${fmt(t.balance)}</div><div class="sub">≈ ${eqUSD(t.balance)} · ${eqUF(t.balance)}</div></div>
-      <div class="kpi pending"><div class="label"><span class="tag"></span>Por cobrar</div><div class="value" style="color:var(--warn)">${fmt(t.porCobrar)}</div><div class="sub">Por pagar: ${fmt(t.porPagar)}</div></div>
+    <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
+      <div class="kpi pending"><div class="label"><span class="tag"></span>Por cobrar</div><div class="value" style="color:var(--warn)">${fmt(t.porCobrar)}</div><div class="sub">${monthMovs().filter(m=>m.tipo==='ingreso'&&m.estado==='pendiente').length} pendiente(s)</div></div>
+      <div class="kpi expense"><div class="label"><span class="tag"></span>Por pagar</div><div class="value" style="color:var(--expense)">${fmt(t.porPagar)}</div><div class="sub">${monthMovs().filter(m=>m.tipo==='egreso'&&m.estado==='pendiente').length} pendiente(s)</div></div>
     </div>
 
     ${(rem.venc.length || rem.prox.length) ? `
@@ -280,7 +294,7 @@ function itemsHTML(movs) {
     return `<li class="mitem" data-id="${m.id}">
       <div class="mi-swipe-bg"><span class="ok">${pend ? (inc?'✓ Cobrado':'✓ Pagado') : '↩ Pendiente'}</span><span>🗑 Eliminar</span></div>
       <div class="mi-fg">
-        <div class="mi-ic ${inc?'in':'out'}">${inc?'↑':'↓'}</div>
+        <div class="mi-ic ${inc?'in':'out'}">${inc?ICON.up:ICON.down}</div>
         <div class="mi-main">
           <div class="mi-title">${esc(m.descripcion || m.categoria)}${m.comprobante?'<span class="mi-clip">📎</span>':''}</div>
           <div class="mi-meta">${meta}${meta ? ' · ' : ''}${ddmm(m.fecha)}</div>
@@ -574,7 +588,7 @@ $('#catClose').addEventListener('click', () => catModal.hidden = true);
 catModal.addEventListener('click', e => { if (e.target === catModal) catModal.hidden = true; });
 
 // ── Navegación / eventos globales ──────────────────────────────────────────────
-function go(view) { state.view = view; render(); window.scrollTo({ top: 0 }); }
+function go(view) { state.view = view; render(); window.scrollTo({ top: 0 }); content.classList.add('view-anim'); }
 document.querySelectorAll('.nav-item, .bn-item').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
 $('#newBtn').addEventListener('click', () => openModal(null));
 $('#fab').addEventListener('click', () => openQuick());
