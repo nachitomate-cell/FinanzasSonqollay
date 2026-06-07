@@ -113,6 +113,7 @@ h1, h2, h3 { margin: 0; }
 
 /* ── Cards / KPIs ── */
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.kpis.dash3 { grid-template-columns: repeat(3, 1fr); }
 .kpi {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 16px 18px; box-shadow: var(--shadow);
@@ -393,6 +394,18 @@ td.amount.out { color: var(--expense); }
 .fab { transition: transform .12s ease, background .15s, box-shadow .15s; }
 .kpi, .card, .mitem, .btn-primary, .btn-ghost { transition: transform .12s ease, box-shadow .15s ease, border-color .15s; }
 .kpi:active, .card:active { transform: scale(.99); }
+.bn-item.active .ic { animation: pop .32s ease; }
+.fab svg { width: 26px; height: 26px; }
+.empty-ic { color: var(--steel); opacity: .28; margin-bottom: 4px; }
+.btn-primary:active, .btn-ghost:active, .icon-btn:active { transform: scale(.95); }
+/* Hover solo en dispositivos con puntero (escritorio) */
+@media (hover: hover) and (pointer: fine) {
+  .card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .kpi:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .btn-primary:hover { box-shadow: 0 6px 18px rgba(247,112,0,.35); }
+  .mitem:hover { background: #f7f9fc; }
+  .ticker:hover { box-shadow: var(--shadow-lg); }
+}
 
 /* Iconos en navegación / botones */
 .bn-item .ic { width: 23px; height: 23px; }
@@ -435,6 +448,8 @@ td.amount.out { color: var(--expense); }
   /* Contenido: deja espacio para la barra inferior */
   .content { padding: 14px 12px calc(80px + env(safe-area-inset-bottom)); }
   .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpis.dash3 { grid-template-columns: repeat(2, 1fr); }
+  .kpis.dash3 > :nth-child(3) { grid-column: 1 / -1; }
   .kpi { padding: 13px 14px; }
   .kpi .value { font-size: 21px; }
   .grid2 { grid-template-columns: 1fr; }

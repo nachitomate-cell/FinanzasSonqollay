@@ -174,7 +174,7 @@ const catColor = (nombre) => state.categorias.find(c => c.nombre === nombre)?.co
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const content = $('#content');
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const SVG = (paths, sw) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw||2.4}" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+const SVG = (paths, sw) => `<svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw||2.4}" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
 const ICON = {
   up: SVG('<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>'),
   down: SVG('<line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/>'),
@@ -204,9 +204,10 @@ function renderDashboard() {
       </div>
     </div>
     ${tickerHTML()}
-    <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
+    <div class="kpis dash3">
       <div class="kpi pending"><div class="label"><span class="tag"></span>Por cobrar</div><div class="value" style="color:var(--warn)">${fmt(t.porCobrar)}</div><div class="sub">${monthMovs().filter(m=>m.tipo==='ingreso'&&m.estado==='pendiente').length} pendiente(s)</div></div>
       <div class="kpi expense"><div class="label"><span class="tag"></span>Por pagar</div><div class="value" style="color:var(--expense)">${fmt(t.porPagar)}</div><div class="sub">${monthMovs().filter(m=>m.tipo==='egreso'&&m.estado==='pendiente').length} pendiente(s)</div></div>
+      <div class="kpi"><div class="label"><span class="tag" style="background:var(--steel)"></span>IVA del mes</div><div class="value" style="color:${t.iva>=0?'var(--ink)':'var(--income)'}">${fmt(t.iva)}</div><div class="sub">${t.iva>=0?'a pagar':'a favor'} · estimado</div></div>
     </div>
 
     ${(rem.venc.length || rem.prox.length) ? `
@@ -223,10 +224,6 @@ function renderDashboard() {
       }).join('')}
     </div>` : ''}
 
-    <div class="card">
-      <div class="row-between"><h3>IVA del mes (estimado)</h3><span class="sub" style="color:var(--muted);font-size:12.5px">Débito − crédito fiscal</span></div>
-      <div style="font-size:22px;font-weight:700;color:${t.iva>=0?'var(--ink)':'var(--income)'}">${fmt(t.iva)} ${t.iva>=0?'<span style="font-size:13px;color:var(--muted);font-weight:500">a pagar</span>':'<span style="font-size:13px;color:var(--income);font-weight:500">a favor</span>'}</div>
-    </div>
 
     <div class="card">
       <div class="row-between" style="margin-bottom:8px"><h3>Movimientos recientes</h3><button class="btn-ghost sm" id="goMovs">Ver todos</button></div>
@@ -380,7 +377,11 @@ function renderCategorias() {
 }
 
 function emptyHTML(msg) {
-  return `<div class="empty"><div class="big">∅</div><p>${msg}</p><button class="btn-primary" onclick="document.getElementById('newBtn').click()">+ Registrar movimiento</button></div>`;
+  return `<div class="empty">
+    <svg class="empty-ic" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>
+    <p>${msg}</p>
+    <button class="btn-primary" onclick="document.getElementById('fab').click()">+ Registrar movimiento</button>
+  </div>`;
 }
 
 const openMov = (id) => openModal(state.movimientos.find(m => m.id === id));
