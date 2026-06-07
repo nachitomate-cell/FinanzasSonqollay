@@ -31,8 +31,13 @@ const state = {
   desde: '',
   hasta: '',
   recurrentes: [],
+  cuentas: [],
 };
-let movStore, catStore, recStore;
+let movStore, catStore, recStore, ctaStore;
+const DEFAULT_CTAS = [
+  { nombre: 'Cuenta corriente', tipo: 'banco', saldoInicial: 0, color: '#0ea5e9' },
+  { nombre: 'Efectivo', tipo: 'efectivo', saldoInicial: 0, color: '#15a35b' },
+];
 
 // Preferencias locales (notificaciones, bloqueo)
 const PREFS_KEY = 'finanzas_prefs';
@@ -166,6 +171,76 @@ function reminders() {
   };
 }
 
+// Cuentas / billeteras
+const CTA_ICON = { banco: SVGc('<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/>'), efectivo: SVGc('<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>'), tarjeta: SVGc('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>'), otro: SVGc('<circle cx="12" cy="12" r="9"/><path d="M12 7v10M8 12h8"/>') };
+function SVGc(p) { return `<svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`; }
+const accountBalance = (id) => {
+  const c = state.cuentas.find(x => x.id === id); if (!c) return 0;
+  const mov = state.movimientos.filter(m => m.cuenta === id && m.estado !== 'pendiente')
+    .reduce((a, m) => a + (m.tipo === 'ingreso' ? 1 : -1) * Number(m.monto || 0), 0);
+  return Number(c.saldoInicial || 0) + mov;
+};
+const totalSaldo = () => state.cuentas.reduce((a, c) => a + accountBalance(c.id), 0);
+
+// Proyección de flujo a fin de mes (saldo actual + por cobrar/pagar con vence en el mes + recurrentes no generados)
+function projection() {
+  const y = state.ref.getFullYear(), mo = state.ref.getMonth();
+  const finMes = `${y}-${String(mo + 1).padStart(2, '0')}-${String(new Date(y, mo + 1, 0).getDate()).padStart(2, '0')}`;
+  const saldo = totalSaldo();
+  const pend = state.movimientos.filter(m => m.estado === 'pendiente' && m.vence && m.vence <= finMes);
+  const cobrar = sum(pend.filter(m => m.tipo === 'ingreso'));
+  const pagar = sum(pend.filter(m => m.tipo === 'egreso'));
+  const dnum = new Date().getDate(), esMesActual = (y === new Date().getFullYear() && mo === new Date().getMonth());
+  let recIn = 0, recOut = 0;
+  if (esMesActual) state.recurrentes.filter(r => r.activo && (r.dia || 1) > dnum).forEach(r => {
+    const ya = state.movimientos.some(m => m.recId === r.id && (m.fecha || '').slice(0, 7) === `${y}-${String(mo + 1).padStart(2, '0')}`);
+    if (!ya) { if (r.tipo === 'ingreso') recIn += Number(r.monto || 0); else recOut += Number(r.monto || 0); }
+  });
+  return { saldo, cobrar, pagar, recIn, recOut, fin: saldo + cobrar - pagar + recIn - recOut };
+}
+
+// Aging de pendientes por antigüedad de vencimiento
+function aging(tipo) {
+  const today = todayStr();
+  const pend = state.movimientos.filter(m => m.tipo === tipo && m.estado === 'pendiente' && m.vence);
+  const b = { vig: 0, d30: 0, d60: 0, d90: 0 };
+  pend.forEach(m => {
+    if (m.vence >= today) { b.vig += Number(m.monto || 0); return; }
+    const dias = Math.floor((new Date(today) - new Date(m.vence)) / 86400000);
+    if (dias <= 30) b.d30 += Number(m.monto || 0); else if (dias <= 60) b.d60 += Number(m.monto || 0); else b.d90 += Number(m.monto || 0);
+  });
+  return b;
+}
+
+// Tema (claro / oscuro)
+const themePref = () => localStorage.getItem('finanzas_theme'); // 'dark' | 'light' | null(sistema)
+function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
+function setTheme(dark) { document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); localStorage.setItem('finanzas_theme', dark ? 'dark' : 'light'); }
+
+// Gráficos SVG (sin librerías)
+function donut(items, size = 110) {
+  const tot = items.reduce((a, i) => a + i.v, 0);
+  const r = size / 2 - 8, cx = size / 2, cy = size / 2, C = 2 * Math.PI * r;
+  if (!tot) return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--line)" stroke-width="12"/></svg>`;
+  let off = 0;
+  const segs = items.map(i => { const len = i.v / tot * C; const s = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${i.color}" stroke-width="12" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"/>`; off += len; return s; }).join('');
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${segs}</svg>`;
+}
+function lineChart(values, w = 560, h = 120) {
+  const n = values.length, max = Math.max(1, ...values.map(Math.abs));
+  const pad = 6, iw = w - pad * 2, ih = h - pad * 2;
+  const x = (i) => pad + (n <= 1 ? iw / 2 : i / (n - 1) * iw);
+  const y = (v) => pad + ih / 2 - (v / max) * (ih / 2 - 4);
+  const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+  const area = `M${x(0)},${y(0)} ` + pts.map(p => 'L' + p).join(' ') + ` L${x(n - 1)},${y(0)} Z`;
+  return `<svg class="linechart" width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <line x1="${pad}" y1="${y(0)}" x2="${w - pad}" y2="${y(0)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>
+    <path d="${area}" fill="var(--brand)" opacity="0.1"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map(p => { const [px, py] = p.split(','); return `<circle cx="${px}" cy="${py}" r="2.6" fill="var(--brand)"/>`; }).join('')}
+  </svg>`;
+}
+
 // Categorías
 const visibleCats = (tipo) => { const l = state.categorias.filter(c => c.tipo === tipo && !c.oculta); return l.length ? l : DEFAULT_CATS.filter(c => c.tipo === tipo); };
 const catColor = (nombre) => state.categorias.find(c => c.nombre === nombre)?.color || 'var(--steel)';
@@ -192,6 +267,8 @@ function renderDashboard() {
   const t = monthTotals(movs);
   const recientes = [...movs].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).slice(0, 6);
   const rem = reminders();
+  const pr = projection();
+  const ag = aging('ingreso'); const agTot = ag.vig + ag.d30 + ag.d60 + ag.d90;
 
   content.innerHTML = `
     <div class="hero">
@@ -209,6 +286,35 @@ function renderDashboard() {
       <div class="kpi expense"><div class="label"><span class="tag"></span>Por pagar</div><div class="value" style="color:var(--expense)">${fmt(t.porPagar)}</div><div class="sub">${monthMovs().filter(m=>m.tipo==='egreso'&&m.estado==='pendiente').length} pendiente(s)</div></div>
       <div class="kpi"><div class="label"><span class="tag" style="background:var(--steel)"></span>IVA del mes</div><div class="value" style="color:${t.iva>=0?'var(--ink)':'var(--income)'}">${fmt(t.iva)}</div><div class="sub">${t.iva>=0?'a pagar':'a favor'} · estimado</div></div>
     </div>
+
+    <div class="card">
+      <div class="row-between" style="margin-bottom:6px"><h3>Cuentas</h3><button class="btn-ghost sm" id="goCtas">Gestionar</button></div>
+      ${state.cuentas.length ? state.cuentas.map(c => `
+        <div class="acct-row">
+          <div class="acct-dot" style="background:${esc(c.color || '#586878')}">${CTA_ICON[c.tipo] || CTA_ICON.otro}</div>
+          <div class="acct-name">${esc(c.nombre)}<span>${esc(c.tipo)}</span></div>
+          <div class="acct-bal" style="color:${accountBalance(c.id) >= 0 ? 'var(--ink)' : 'var(--expense)'}">${fmt(accountBalance(c.id))}</div>
+        </div>`).join('') + `<div class="acct-total"><span>Total disponible</span><b>${fmt(totalSaldo())}</b></div>` : '<p class="sub" style="color:var(--muted);padding:6px 0">Sin cuentas. Tocá "Gestionar" para crear una.</p>'}
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:10px">Proyección a fin de mes</h3>
+      <div class="proj">
+        <div class="proj-row"><span>Saldo actual</span><span class="v">${fmt(pr.saldo)}</span></div>
+        <div class="proj-row"><span>+ Por cobrar (vence este mes)</span><span class="v" style="color:var(--income)">${fmt(pr.cobrar)}</span></div>
+        <div class="proj-row"><span>− Por pagar (vence este mes)</span><span class="v" style="color:var(--expense)">${fmt(pr.pagar)}</span></div>
+        ${(pr.recIn || pr.recOut) ? `<div class="proj-row"><span>± Recurrentes restantes</span><span class="v">${fmt(pr.recIn - pr.recOut)}</span></div>` : ''}
+        <div class="proj-row tot"><span>Saldo proyectado</span><span class="v" style="color:${pr.fin >= 0 ? 'var(--income)' : 'var(--expense)'}">${fmt(pr.fin)}</span></div>
+      </div>
+    </div>
+
+    ${agTot ? `<div class="card"><h3 style="margin-bottom:10px">Cobros por antigüedad</h3>
+      <div class="aging-grid">
+        <div class="aging-cell"><div class="ab">${fmt(ag.vig)}</div><div class="al">Vigente</div></div>
+        <div class="aging-cell warn"><div class="ab">${fmt(ag.d30)}</div><div class="al">1–30 d</div></div>
+        <div class="aging-cell warn"><div class="ab">${fmt(ag.d60)}</div><div class="al">31–60 d</div></div>
+        <div class="aging-cell bad"><div class="ab">${fmt(ag.d90)}</div><div class="al">60+ d</div></div>
+      </div></div>` : ''}
 
     ${(rem.venc.length || rem.prox.length) ? `
     <div class="card rem-card">
@@ -231,6 +337,7 @@ function renderDashboard() {
     </div>`;
 
   $('#goMovs')?.addEventListener('click', () => go('movimientos'));
+  $('#goCtas')?.addEventListener('click', openCta);
   $('#ticker')?.addEventListener('click', () => { toast('Actualizando indicadores…'); loadIndicadores(); });
   wireRows();
 }
@@ -323,6 +430,11 @@ function renderFlujo() {
       <div class="kpi balance"><div class="label"><span class="tag"></span>Balance ${y}</div><div class="value" style="color:${totIn-totOut>=0?'var(--income)':'var(--expense)'}">${fmt(totIn-totOut)}</div></div>
     </div>
     <div class="card">
+      <div class="row-between" style="margin-bottom:6px"><h3>Tendencia del balance</h3><span class="sub" style="color:var(--muted);font-size:12px">${y}</span></div>
+      ${lineChart(rows.map(r => r.balance))}
+      <div style="color:var(--muted);font-size:12px;margin-top:8px">Balance mensual (ingresos − egresos)</div>
+    </div>
+    <div class="card">
       <div class="row-between" style="margin-bottom:10px">
         <h3>Flujo de caja</h3>
         <div class="period" style="gap:4px"><button class="icon-btn" id="prevYear">‹</button><strong>${y}</strong><button class="icon-btn" id="nextYear">›</button></div>
@@ -352,17 +464,33 @@ function renderCategorias() {
     return { items, tot: items.reduce((a, [, v]) => a + v, 0) };
   };
   const ing = build('ingreso'), egr = build('egreso');
-  const block = (titulo, data) => `
-    <div class="card">
-      <div class="row-between" style="margin-bottom:10px"><h3>${titulo}</h3><strong>${fmt(data.tot)}</strong></div>
-      ${data.items.length ? data.items.map(([name, v]) => `
-        <div class="cat-row" style="grid-template-columns:1fr">
-          <div>
-            <div style="display:flex;justify-content:space-between"><span class="cat-name">${esc(name)}</span><span class="cat-amt">${fmt(v)} <span style="color:var(--muted);font-weight:500;font-size:12px">(${data.tot?Math.round(v/data.tot*100):0}%)</span></span></div>
-            <div class="cat-meter"><i style="width:${data.tot?v/data.tot*100:0}%;background:${catColor(name)}"></i></div>
-          </div>
-        </div>`).join('') : emptyHTML('Sin datos')}
+  const block = (titulo, data) => {
+    const items = data.items.map(([name, v]) => ({ name, v, color: catColor(name) }));
+    return `<div class="card">
+      <div class="row-between" style="margin-bottom:12px"><h3>${titulo}</h3><strong>${fmt(data.tot)}</strong></div>
+      ${items.length ? `<div class="chart-row">${donut(items)}
+        <div class="donut-legend">${items.map(i => `<div class="dl"><i style="background:${i.color}"></i><span>${esc(i.name)}</span><span class="dv">${fmt(i.v)} · ${data.tot?Math.round(i.v/data.tot*100):0}%</span></div>`).join('')}</div>
+      </div>` : emptyHTML('Sin datos')}
     </div>`;
+  };
+
+  // Estado de resultados (P&L) — mes actual vs mes anterior
+  const prevRef = new Date(state.ref.getFullYear(), state.ref.getMonth() - 1, 1);
+  const tPrev = monthTotals(state.movimientos.filter(m => inMonth(m, prevRef.getFullYear(), prevRef.getMonth())));
+  const tNow = monthTotals(movs);
+  const vpct = (now, prev) => prev ? Math.round((now - prev) / Math.abs(prev) * 100) : (now ? 100 : 0);
+  const plRow = (label, now, prev, color, strong) => {
+    const d = vpct(now, prev), up = d >= 0;
+    return `<div class="proj-row${strong ? ' tot' : ''}"><span>${label}</span><span class="v"><span style="color:${color}">${fmt(now)}</span> <span style="font-size:11px;color:${up ? 'var(--income)' : 'var(--expense)'}">${d === 0 ? '' : (up ? '▲' : '▼') + Math.abs(d) + '%'}</span></span></div>`;
+  };
+  const plCard = `<div class="card">
+    <div class="row-between" style="margin-bottom:10px"><h3>Estado de resultados</h3><span class="sub" style="color:var(--muted);font-size:12px">vs ${MESES[prevRef.getMonth()]}</span></div>
+    <div class="proj">
+      ${plRow('Ingresos', tNow.tIn, tPrev.tIn, 'var(--income)')}
+      ${plRow('Egresos', tNow.tOut, tPrev.tOut, 'var(--expense)')}
+      ${plRow('Resultado', tNow.balance, tPrev.balance, tNow.balance >= 0 ? 'var(--income)' : 'var(--expense)', true)}
+    </div>
+  </div>`;
   const buds = budgetStatus().sort((a, b) => b.pct - a.pct);
   const budCard = buds.length ? `<div class="card"><h3>Presupuestos del mes</h3>${buds.map(b => {
     const cls = b.pct >= 1 ? 'over' : b.pct >= 0.8 ? 'warn' : '';
@@ -370,6 +498,7 @@ function renderCategorias() {
   }).join('')}</div>` : '';
   content.innerHTML = `
     <div class="row-between" style="margin-bottom:14px"><h3 style="font-size:15px">Análisis del mes</h3><button class="btn-ghost sm" id="mgrCatBtn">⚙ Administrar categorías</button></div>
+    ${plCard}
     ${budCard}
     ${block('Ingresos por categoría', ing)}
     ${block('Egresos por categoría', egr)}`;
@@ -426,6 +555,12 @@ function fillCategorias(tipo, selected) {
     sel.value = selected;
   }
 }
+const defaultCuenta = () => state.cuentas[0]?.id || '';
+function fillCuentas(selectedId) {
+  const sel = $('#f_cuenta');
+  sel.innerHTML = '<option value="">— Sin cuenta —</option>' + state.cuentas.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  sel.value = selectedId || '';
+}
 function toggleVence() { $('#venceField').hidden = $('#f_estado').value !== 'pendiente'; }
 function updateMontoCur() { $('#montoCur').textContent = '(' + $('#f_moneda').value + ')'; }
 function updateConvHint() {
@@ -460,6 +595,7 @@ function openModal(mov) {
   $('#f_contraparte').value = mov?.contraparte || '';
   $('#f_documento').value = mov?.documento || '';
   $('#f_medio').value = mov?.medio || 'Transferencia';
+  fillCuentas(mov ? mov.cuenta : defaultCuenta());
   $('#f_estado').value = mov?.estado || 'pagado';
   $('#f_iva').checked = mov?.iva ?? true;
   $('#f_vence').value = mov?.vence || '';
@@ -514,6 +650,7 @@ $('#movForm').addEventListener('submit', async (e) => {
     contraparte: $('#f_contraparte').value.trim(),
     documento: $('#f_documento').value.trim(),
     medio: $('#f_medio').value,
+    cuenta: $('#f_cuenta').value || '',
     estado,
     iva: $('#f_iva').checked,
     vence: estado === 'pendiente' ? ($('#f_vence').value || '') : '',
@@ -597,7 +734,7 @@ $('#cfgBtn').addEventListener('click', openCfg);
 $('#modalClose').addEventListener('click', closeModal);
 $('#cancelBtn').addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { ['#modal','#catModal','#quickModal','#cfgModal','#recModal','#imgViewer'].forEach(s => { const el = $(s); if (el && !el.hidden) el.hidden = true; }); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { ['#modal','#catModal','#quickModal','#cfgModal','#recModal','#ctaModal','#imgViewer'].forEach(s => { const el = $(s); if (el && !el.hidden) el.hidden = true; }); } });
 
 $('#prevMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() - 1, 1); render(); });
 $('#nextMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() + 1, 1); render(); });
@@ -748,7 +885,7 @@ document.querySelectorAll('input[name="qtipo"]').forEach(r => r.addEventListener
 $('#quickSave').addEventListener('click', async () => {
   const monto = Number(quickAmt || 0);
   if (!monto) return toast('Ingresá un monto');
-  await movStore.add({ tipo: quickTipo, fecha: todayStr(), moneda: 'CLP', montoOrig: monto, tc: 1, monto, categoria: quickCat, descripcion: '', contraparte: '', documento: '', medio: 'Transferencia', estado: 'pagado', iva: true, vence: '', comprobante: '' });
+  await movStore.add({ tipo: quickTipo, fecha: todayStr(), moneda: 'CLP', montoOrig: monto, tc: 1, monto, categoria: quickCat, descripcion: '', contraparte: '', documento: '', medio: 'Transferencia', cuenta: defaultCuenta(), estado: 'pagado', iva: true, vence: '', comprobante: '' });
   quickModal.hidden = true; toast('Guardado');
 });
 $('#quickMore').addEventListener('click', () => {
@@ -766,6 +903,14 @@ function openCfg() { cfgModal.hidden = false; renderCfg(); }
 function renderCfg() {
   const sw = (id, on, label, desc) => `<div class="cfg-row"><div class="cfg-txt"><b>${label}</b><span>${desc}</span></div><label class="switch"><input type="checkbox" id="${id}" ${on?'checked':''}/><span class="sl"></span></label></div>`;
   $('#cfgBody').innerHTML = `
+    <div class="cfg-section">
+      <h4>Apariencia</h4>
+      ${sw('cfgDark', isDark(), 'Modo oscuro', 'Tema oscuro para toda la app')}
+    </div>
+    <div class="cfg-section">
+      <h4>Cuentas</h4>
+      <div class="cfg-row"><div class="cfg-txt"><b>Cuentas y saldos</b><span>Bancos, efectivo, tarjetas</span></div><button class="btn-ghost sm" id="cfgCta">Gestionar</button></div>
+    </div>
     <div class="cfg-section">
       <h4>Seguridad</h4>
       ${sw('cfgLock', LOCK.enabled(), 'Bloqueo con PIN', 'Pide un PIN al abrir la app')}
@@ -788,6 +933,8 @@ function renderCfg() {
       <div class="cfg-row"><div class="cfg-txt"><b>Modo</b><span>${backend?.isCloud ? 'Nube (Firebase) — sincronizado' : 'Local (este dispositivo)'}</span></div></div>
     </div>`;
 
+  $('#cfgDark').addEventListener('change', e => setTheme(e.target.checked));
+  $('#cfgCta').addEventListener('click', openCta);
   $('#cfgEnableNotif').addEventListener('click', enableReminders);
   $('#cfgRec').addEventListener('click', openRec);
   $('#cfgLock').addEventListener('change', async e => {
@@ -854,6 +1001,43 @@ function renderRec() {
 }
 $('#recClose').addEventListener('click', () => recModal.hidden = true);
 recModal.addEventListener('click', e => { if (e.target === recModal) recModal.hidden = true; });
+
+// ── Gestor de cuentas ──────────────────────────────────────────────────────────
+const ctaModal = $('#ctaModal');
+function openCta() { ctaModal.hidden = false; renderCtaModal(); }
+function renderCtaModal() {
+  $('#ctaBody').innerHTML = `
+    <div class="cat-mgr-add">
+      <input type="color" class="swatch" id="newCtaColor" value="#0ea5e9" />
+      <input type="text" id="newCtaName" placeholder="Nombre (ej. Banco Estado)" maxlength="40" />
+    </div>
+    <div class="grid2">
+      <label class="field">Tipo <select id="newCtaTipo"><option value="banco">Banco</option><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="otro">Otro</option></select></label>
+      <label class="field">Saldo inicial (CLP) <input type="number" id="newCtaSaldo" value="0" step="1" inputmode="numeric" /></label>
+    </div>
+    <div class="modal-foot"><span class="spacer"></span><button class="btn-primary" id="addCtaBtn">Agregar cuenta</button></div>
+    <h4 style="margin:8px 0;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px">Mis cuentas</h4>
+    ${state.cuentas.length ? state.cuentas.map(c => `
+      <div class="acct-row" data-id="${c.id}">
+        <div class="acct-dot" style="background:${esc(c.color || '#586878')}">${CTA_ICON[c.tipo] || CTA_ICON.otro}</div>
+        <div class="acct-name">${esc(c.nombre)}<span>${esc(c.tipo)} · inicial ${fmt(c.saldoInicial || 0)}</span></div>
+        <div class="acct-bal">${fmt(accountBalance(c.id))}</div>
+        <button class="icon-btn" data-act="edit" title="Saldo inicial">✎</button>
+        <button class="icon-btn" data-act="del" title="Eliminar">🗑</button>
+      </div>`).join('') : '<p class="sub" style="color:var(--muted);padding:6px 0">Sin cuentas todavía.</p>'}`;
+  $('#addCtaBtn').addEventListener('click', async () => {
+    const nombre = $('#newCtaName').value.trim(); if (!nombre) return toast('Ponle un nombre');
+    await ctaStore.add({ nombre, tipo: $('#newCtaTipo').value, saldoInicial: Number($('#newCtaSaldo').value || 0), color: $('#newCtaColor').value });
+    toast('Cuenta agregada');
+  });
+  $('#ctaBody').querySelectorAll('.acct-row[data-id]').forEach(row => {
+    const id = row.dataset.id, c = state.cuentas.find(x => x.id === id);
+    row.querySelector('[data-act="edit"]').addEventListener('click', () => { const v = prompt(`Saldo inicial de "${c.nombre}" (CLP):`, c.saldoInicial || 0); if (v !== null) ctaStore.update(id, { saldoInicial: Number(v) || 0 }); });
+    row.querySelector('[data-act="del"]').addEventListener('click', () => { if (confirm(`¿Eliminar la cuenta "${c.nombre}"? Los movimientos no se borran.`)) ctaStore.remove(id); });
+  });
+}
+$('#ctaClose').addEventListener('click', () => ctaModal.hidden = true);
+ctaModal.addEventListener('click', e => { if (e.target === ctaModal) ctaModal.hidden = true; });
 
 async function generateRecurrentes() {
   const ym = todayStr().slice(0, 7), dnum = new Date().getDate();
@@ -1009,6 +1193,17 @@ function notifyAll(force) {
   movStore = backend.collection('movimientos');
   catStore = backend.collection('categorias');
   recStore = backend.collection('recurrentes');
+  ctaStore = backend.collection('cuentas');
+
+  await ctaStore.init((data) => {
+    state.cuentas = data;
+    if (!data.length && !localStorage.getItem('finanzas_ctas_seeded')) {
+      localStorage.setItem('finanzas_ctas_seeded', '1');
+      DEFAULT_CTAS.forEach(c => ctaStore.add(c));
+    }
+    if (state.view === 'dashboard') render();
+    if (!ctaModal.hidden) renderCtaModal();
+  });
 
   let loadedRec = false, loadedMov = false, genDone = false;
   const tryGen = () => { if (loadedRec && loadedMov && !genDone) { genDone = true; generateRecurrentes(); } };

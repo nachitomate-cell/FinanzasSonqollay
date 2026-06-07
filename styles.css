@@ -430,6 +430,67 @@ td.amount.out { color: var(--expense); }
 .skeleton { background: linear-gradient(90deg, #eef1f5 25%, #e3e8ee 37%, #eef1f5 63%); background-size: 200% 100%; animation: shimmer 1.3s infinite; border-radius: 7px; color: transparent !important; display: inline-block; min-width: 64px; height: 1em; }
 @media (max-width: 820px) { .modal-backdrop:not([hidden]) > .modal { animation: sheetUpM .32s cubic-bezier(.22,1,.36,1); } }
 
+/* ── Cuentas / proyección / aging / charts ── */
+.acct-row { display: flex; align-items: center; gap: 11px; padding: 10px 0; border-bottom: 1px solid #eef1f5; }
+.acct-row:last-child { border-bottom: 0; }
+.acct-dot { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 9px; display: grid; place-items: center; color: #fff; }
+.acct-dot .ic { width: 16px; height: 16px; }
+.acct-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; }
+.acct-name span { display: block; font-size: 11.5px; color: var(--muted); font-weight: 500; text-transform: capitalize; }
+.acct-bal { font-weight: 700; font-variant-numeric: tabular-nums; }
+.acct-total { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 12px; border-top: 2px solid var(--line); font-size: 15px; }
+.acct-total b { font-size: 18px; font-variant-numeric: tabular-nums; }
+
+.proj { display: grid; gap: 4px; }
+.proj-row { display: flex; justify-content: space-between; font-size: 13.5px; color: var(--steel); }
+.proj-row.tot { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 8px; font-weight: 700; color: var(--ink); font-size: 16px; }
+.proj-row .v { font-variant-numeric: tabular-nums; }
+
+.aging-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.aging-cell { background: #f7f9fb; border-radius: 10px; padding: 9px 8px; text-align: center; }
+.aging-cell .ab { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.aging-cell .al { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+.aging-cell.warn { background: #fff3d6; } .aging-cell.bad { background: var(--expense-bg); }
+
+.chart-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.donut-legend { display: grid; gap: 5px; flex: 1; min-width: 140px; }
+.donut-legend .dl { display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
+.donut-legend .dl i { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 10px; }
+.donut-legend .dl .dv { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* ── Modo oscuro ── */
+[data-theme="dark"] {
+  --ink: #e7edf3; --muted: #92a0af; --line: #28323d; --bg: #0e151d; --card: #18212b;
+  --income-bg: #112318; --expense-bg: #2a1718;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.45);
+  --shadow-lg: 0 14px 36px rgba(0,0,0,.6);
+}
+[data-theme="dark"] .topbar { background: rgba(14,21,29,.9); }
+[data-theme="dark"] .btn-ghost { background: var(--card); color: var(--ink); }
+[data-theme="dark"] .icon-btn:hover { background: #222d38; }
+[data-theme="dark"] .menu { background: var(--card); }
+[data-theme="dark"] .menu button { color: var(--ink); }
+[data-theme="dark"] .menu button:hover { background: #222d38; }
+[data-theme="dark"] thead th { background: #141c25; color: var(--muted); }
+[data-theme="dark"] .table-wrap, [data-theme="dark"] .mlist, [data-theme="dark"] .mi-fg { background: var(--card); }
+[data-theme="dark"] .mitem:hover { background: #1e2832; }
+[data-theme="dark"] tbody td, [data-theme="dark"] .mitem, [data-theme="dark"] .cat-row, [data-theme="dark"] .bud-row, [data-theme="dark"] .cfg-row, [data-theme="dark"] .rec-row, [data-theme="dark"] .acct-row, [data-theme="dark"] .cat-mgr-row, [data-theme="dark"] .rem-item { border-color: #232e39; }
+[data-theme="dark"] .field input, [data-theme="dark"] .field select, [data-theme="dark"] .toolbar input, [data-theme="dark"] .toolbar select, [data-theme="dark"] .cat-mgr-add input[type="text"] { background: #0e151d; color: var(--ink); border-color: var(--line); }
+[data-theme="dark"] .modal, [data-theme="dark"] .modal-foot { background: var(--card); }
+[data-theme="dark"] .modal-head { border-color: var(--line); }
+[data-theme="dark"] .bottom-nav { background: rgba(20,28,37,.96); border-color: var(--line); }
+[data-theme="dark"] .ticker { background: linear-gradient(90deg, #18212b, #141c25); }
+[data-theme="dark"] .bar-track, [data-theme="dark"] .cat-meter, [data-theme="dark"] .bud-bar, [data-theme="dark"] .keypad button, [data-theme="dark"] .aging-cell { background: #222d38; }
+[data-theme="dark"] .keypad button { color: var(--ink); border-color: var(--line); }
+[data-theme="dark"] .sync-chip { background: #222d38; color: var(--muted); }
+[data-theme="dark"] .seg-opt { background: var(--card); border-color: var(--line); color: var(--muted); }
+[data-theme="dark"] .conv-hint { background: #141c25; border-color: var(--line); }
+[data-theme="dark"] .pill.pagado { background: #222d38; color: var(--muted); }
+[data-theme="dark"] .q-chips .chip { background: var(--card); border-color: var(--line); color: var(--muted); }
+[data-theme="dark"] .switch .sl { background: #3a4654; }
+[data-theme="dark"] .skeleton { background: linear-gradient(90deg, #18212b 25%, #222d38 37%, #18212b 63%); background-size: 200% 100%; }
+[data-theme="dark"] .empty-ic { color: var(--muted); }
+
 /* ── Responsive / mobile-first (el cliente usa el teléfono ~80%) ── */
 @media (max-width: 820px) {
   /* La sidebar desaparece: navegación por barra inferior */
