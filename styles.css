@@ -195,6 +195,54 @@ td.amount.out { color: var(--expense); }
 .cat-name { font-size: 13.5px; }
 .cat-amt { font-variant-numeric: tabular-nums; font-weight: 600; }
 
+/* ── Menú desplegable (exportar) ── */
+.menu-wrap { position: relative; }
+.menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; background: #fff;
+  border: 1px solid var(--line); border-radius: 11px; box-shadow: var(--shadow); padding: 6px; min-width: 160px; }
+.menu button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 9px 11px;
+  border-radius: 8px; font-size: 13.5px; color: var(--ink); }
+.menu button:hover { background: #f4f6f9; }
+
+/* ── Campana recordatorios ── */
+#bellBtn.on { color: var(--brand); }
+.rem-card { border-left: 3px solid var(--warn); }
+.rem-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #eef1f5; cursor: pointer; }
+.rem-item:last-child { border-bottom: 0; }
+.rem-item .rem-when { font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.rem-when.venc { background: var(--expense-bg); color: var(--expense); }
+.rem-when.prox { background: #fff3d6; color: var(--warn); }
+.rem-item .rem-main { flex: 1; min-width: 0; }
+.rem-item .rem-main b { font-size: 13.5px; }
+.rem-item .rem-main span { display: block; font-size: 12px; color: var(--muted); }
+.rem-amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ── Adjuntar comprobante ── */
+.attach { display: flex; flex-direction: column; gap: 10px; }
+.attach .btn-ghost { width: 100%; }
+.attach-preview { position: relative; display: inline-block; }
+.attach-preview img { max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.attach-remove { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.6); color: #fff; }
+.attach-remove:hover { background: rgba(0,0,0,.8); }
+.mi-clip { font-size: 12px; color: var(--steel); margin-left: 4px; }
+
+/* ── Gestor de categorías ── */
+.cat-mgr-add { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.cat-mgr-add input[type="text"] { flex: 1; min-width: 120px; border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; font-size: 14px; }
+.swatch { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); padding: 0; cursor: pointer; }
+.cat-mgr-list { list-style: none; margin: 0; padding: 0; }
+.cat-mgr-row { display: flex; align-items: center; gap: 10px; padding: 9px 2px; border-bottom: 1px solid #eef1f5; }
+.cat-mgr-row:last-child { border-bottom: 0; }
+.cat-dot { width: 14px; height: 14px; border-radius: 50%; flex: 0 0 14px; cursor: pointer; border: 1px solid rgba(0,0,0,.1); }
+.cat-mgr-row .cn { flex: 1; min-width: 0; font-size: 14px; }
+.cat-mgr-row.oculta .cn { color: var(--muted); text-decoration: line-through; }
+.cat-mgr-row .icon-btn { width: 34px; height: 34px; font-size: 15px; }
+.seg.tipo-seg { margin-bottom: 14px; }
+
+/* ── Visor de comprobante ── */
+.img-viewer { position: fixed; inset: 0; background: rgba(8,12,18,.92); z-index: 90; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.img-viewer img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+.img-close { position: fixed; top: calc(12px + env(safe-area-inset-top)); right: 14px; background: rgba(255,255,255,.15); color: #fff; font-size: 20px; }
+
 /* ── Modal ── */
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(20,30,45,.45); z-index: 50;

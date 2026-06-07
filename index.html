@@ -51,7 +51,15 @@
       </div>
       <div class="topbar-actions">
         <span class="sync-chip only-mobile" id="syncChip"><span class="dot"></span>Local</span>
-        <button class="btn-ghost sm" id="exportBtn" title="Exportar CSV">Exportar</button>
+        <button class="icon-btn" id="bellBtn" title="Activar recordatorios">🔔</button>
+        <div class="menu-wrap">
+          <button class="btn-ghost sm" id="exportBtn" title="Exportar">Exportar ▾</button>
+          <div class="menu" id="exportMenu" hidden>
+            <button type="button" data-exp="csv">CSV</button>
+            <button type="button" data-exp="xlsx">Excel (.xlsx)</button>
+            <button type="button" data-exp="pdf">PDF (reporte)</button>
+          </div>
+        </div>
         <button class="btn-primary" id="newBtn">+ Movimiento</button>
       </div>
     </header>
@@ -129,6 +137,19 @@
         <label class="check">
           <input type="checkbox" id="f_iva" /> Afecto a IVA (19%)
         </label>
+        <label class="field" id="venceField" hidden>Vence (fecha de cobro / pago)
+          <input type="date" id="f_vence" />
+        </label>
+        <div class="field">Comprobante (boleta / factura)
+          <input type="file" id="f_file" accept="image/*" capture="environment" hidden />
+          <div class="attach">
+            <button type="button" class="btn-ghost" id="attachBtn">📷 Adjuntar o tomar foto</button>
+            <div class="attach-preview" id="attachPreview" hidden>
+              <img id="attachImg" alt="Comprobante" />
+              <button type="button" class="icon-btn attach-remove" id="attachRemove" title="Quitar foto">✕</button>
+            </div>
+          </div>
+        </div>
         <div class="modal-foot">
           <button type="button" class="btn-ghost danger" id="deleteBtn" hidden>Eliminar</button>
           <span class="spacer"></span>
@@ -137,6 +158,23 @@
         </div>
       </form>
     </div>
+  </div>
+
+  <!-- Modal categorías -->
+  <div class="modal-backdrop" id="catModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="catTitle">
+      <div class="modal-head">
+        <h2 id="catTitle">Categorías</h2>
+        <button class="icon-btn" id="catClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body" id="catBody"><!-- inyectado por app.js --></div>
+    </div>
+  </div>
+
+  <!-- Visor de comprobante -->
+  <div class="img-viewer" id="imgViewer" hidden>
+    <button class="icon-btn img-close" id="imgClose" aria-label="Cerrar">✕</button>
+    <img id="imgFull" alt="Comprobante" />
   </div>
 
   <div class="toast" id="toast" hidden></div>

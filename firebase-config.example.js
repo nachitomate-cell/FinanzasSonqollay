@@ -16,3 +16,8 @@ export const firebaseConfig = {
   messagingSenderId: "TU_SENDER_ID",
   appId: "TU_APP_ID"
 };
+
+// Solo si vas a usar recordatorios push (FCM):
+// Firebase Console → Cloud Messaging → Web Push certificates → Key pair.
+// Si la dejás vacía, los recordatorios usan notificaciones locales del navegador.
+export const VAPID_KEY = "";

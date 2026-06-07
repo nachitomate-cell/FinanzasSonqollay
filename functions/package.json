@@ -1,0 +1,14 @@
+{
+  "name": "finanzas-sonqollay-functions",
+  "description": "Cloud Functions: recordatorios de cobros/pagos",
+  "engines": { "node": "20" },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.1.0"
+  },
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions"
+  }
+}
