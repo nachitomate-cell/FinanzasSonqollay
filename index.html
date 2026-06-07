@@ -51,6 +51,7 @@
       </div>
       <div class="topbar-actions">
         <span class="sync-chip only-mobile" id="syncChip"><span class="dot"></span>Local</span>
+        <button class="icon-btn" id="cfgBtn" title="Ajustes">⚙</button>
         <button class="icon-btn" id="bellBtn" title="Activar recordatorios">🔔</button>
         <div class="menu-wrap">
           <button class="btn-ghost sm" id="exportBtn" title="Exportar">Exportar ▾</button>
@@ -177,6 +178,66 @@
       </div>
       <div class="modal-body" id="catBody"><!-- inyectado por app.js --></div>
     </div>
+  </div>
+
+  <!-- Registro rápido (2 toques) -->
+  <div class="modal-backdrop" id="quickModal" hidden>
+    <div class="modal quick" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h2>Registro rápido</h2>
+        <button class="icon-btn" id="quickClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="seg">
+          <label class="seg-opt expense"><input type="radio" name="qtipo" value="egreso" checked /> <span>Gasto</span></label>
+          <label class="seg-opt income"><input type="radio" name="qtipo" value="ingreso" /> <span>Ingreso</span></label>
+        </div>
+        <div class="q-amount" id="qAmount">$0</div>
+        <div class="q-chips" id="qChips"></div>
+        <div class="keypad" id="keypad">
+          <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+          <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+          <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+          <button type="button" data-k="000">000</button><button type="button" data-k="0">0</button><button type="button" data-k="back">⌫</button>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn-ghost" id="quickMore">Más opciones</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn-primary" id="quickSave">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ajustes -->
+  <div class="modal-backdrop" id="cfgModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h2>Ajustes</h2>
+        <button class="icon-btn" id="cfgClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body" id="cfgBody"><!-- inyectado por app.js --></div>
+    </div>
+  </div>
+
+  <!-- Movimientos recurrentes -->
+  <div class="modal-backdrop" id="recModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h2>Recurrentes</h2>
+        <button class="icon-btn" id="recClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body" id="recBody"><!-- inyectado por app.js --></div>
+    </div>
+  </div>
+
+  <!-- Pantalla de bloqueo (PIN / huella) -->
+  <div class="lock" id="lockScreen" hidden>
+    <img src="logo.png" class="lock-logo" alt="Finanzas Sonqollay" />
+    <div class="lock-title" id="lockTitle">Ingresá tu PIN</div>
+    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+    <div class="keypad lock-pad" id="lockPad"></div>
+    <button class="btn-ghost lock-bio" id="bioBtn" hidden>🔓 Usar huella / Face ID</button>
   </div>
 
   <!-- Visor de comprobante -->

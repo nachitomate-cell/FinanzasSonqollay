@@ -36,6 +36,20 @@ Parte del ecosistema Sonqollay junto a *Aura BIM* (`dbsonqollay`) y *SonqollayAP
   usado). Los KPIs muestran su equivalente en USD/UF.
 - **Exportación**: **CSV**, **Excel (.xlsx)** y **PDF** (reporte con resumen,
   tipo de cambio del día y tabla), respetando el período/alcance seleccionado.
+- **Registro rápido (2 toques)**: botón flotante → teclado numérico grande +
+  chips de categoría para anotar un gasto en segundos. Atajos del ícono PWA
+  ("Nuevo gasto" / "Nuevo ingreso") y **swipe** en la lista (deslizar → marcar
+  pagado/cobrado o eliminar).
+- **Movimientos recurrentes**: sueldos, arriendo, suscripciones que se generan
+  solos cada mes (o "repetir hoy" con un toque). Ajustes → Recurrentes.
+- **Presupuestos por categoría**: monto mensual con barra de avance y alerta al
+  superarlo. Se define con 💰 en el gestor de categorías.
+- **Bloqueo con PIN / huella**: pantalla de bloqueo al abrir y auto-bloqueo al
+  volver tras 30 s; PIN (hash SHA-256) y biometría (WebAuthn). Ajustes → Seguridad.
+- **Suite de notificaciones**: vencimientos, **resumen semanal**, **recordatorio
+  F29/IVA** (con el monto) y **alerta de presupuesto**; locales en el navegador y
+  **push FCM** en Modo nube (Cloud Functions `weeklySummary`, `monthlyF29Reminder`).
+  Se configuran en Ajustes → Notificaciones.
 - **PWA**: instalable en escritorio/móvil, app shell cacheada para uso offline.
 
 ## Modo de datos

@@ -11,5 +11,9 @@
   "lang": "es-CL",
   "icons": [
     { "src": "logo.png", "sizes": "any", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Nuevo gasto", "short_name": "Gasto", "url": "./index.html?quick=egreso", "icons": [{ "src": "logo.png", "sizes": "any" }] },
+    { "name": "Nuevo ingreso", "short_name": "Ingreso", "url": "./index.html?quick=ingreso", "icons": [{ "src": "logo.png", "sizes": "any" }] }
   ]
 }

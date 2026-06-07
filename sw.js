@@ -1,5 +1,5 @@
 // Service worker — cache de shell para offline.
-const CACHE = 'finanzas-sonqollay-v4';
+const CACHE = 'finanzas-sonqollay-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -25,6 +25,15 @@ self.addEventListener('activate', (e) => {
     )
   );
   self.clients.claim();
+});
+
+// Clic en una notificación local → enfocar/abrir la app
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    for (const c of cs) if ('focus' in c) return c.focus();
+    if (self.clients.openWindow) return self.clients.openWindow('./');
+  }));
 });
 
 self.addEventListener('fetch', (e) => {

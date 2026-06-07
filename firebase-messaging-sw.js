@@ -20,3 +20,12 @@ try {
 } catch (e) {
   // Sin config: el SW queda inerte (Modo local).
 }
+
+// Clic en la notificación push → enfocar/abrir la app
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    for (const c of cs) if ('focus' in c) return c.focus();
+    if (self.clients.openWindow) return self.clients.openWindow('./');
+  }));
+});

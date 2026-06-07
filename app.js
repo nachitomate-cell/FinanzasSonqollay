@@ -30,8 +30,14 @@ const state = {
   scope: 'mes',             // mes | anio | rango | todo
   desde: '',
   hasta: '',
+  recurrentes: [],
 };
-let movStore, catStore;
+let movStore, catStore, recStore;
+
+// Preferencias locales (notificaciones, bloqueo)
+const PREFS_KEY = 'finanzas_prefs';
+const prefs = Object.assign({ nDue: true, nWeekly: true, nF29: true, nBudget: true }, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch { return {}; } })());
+const savePrefs = () => localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
 
 // ── Capa de datos (adapter genérico por colección) ───────────────────────────
 let backend = null;
@@ -271,15 +277,18 @@ function itemsHTML(movs) {
     const meta = [m.categoria, m.contraparte].filter(Boolean).map(esc).join(' · ');
     const pend = (m.estado || 'pagado') === 'pendiente';
     return `<li class="mitem" data-id="${m.id}">
-      <div class="mi-ic ${inc?'in':'out'}">${inc?'↑':'↓'}</div>
-      <div class="mi-main">
-        <div class="mi-title">${esc(m.descripcion || m.categoria)}${m.comprobante?'<span class="mi-clip">📎</span>':''}</div>
-        <div class="mi-meta">${meta}${meta ? ' · ' : ''}${ddmm(m.fecha)}</div>
-      </div>
-      <div class="mi-right">
-        <div class="mi-amt ${inc?'in':'out'}">${inc?'+':'−'}${fmt(m.monto)}</div>
-        ${m.moneda && m.moneda !== 'CLP' ? `<span class="fx-badge">${m.moneda} ${nf(m.moneda==='UF'?1:0).format(m.montoOrig||0)}</span>` : ''}
-        ${pend ? '<span class="pill pendiente">Pendiente</span>' : ''}
+      <div class="mi-swipe-bg"><span class="ok">${pend ? (inc?'✓ Cobrado':'✓ Pagado') : '↩ Pendiente'}</span><span>🗑 Eliminar</span></div>
+      <div class="mi-fg">
+        <div class="mi-ic ${inc?'in':'out'}">${inc?'↑':'↓'}</div>
+        <div class="mi-main">
+          <div class="mi-title">${esc(m.descripcion || m.categoria)}${m.comprobante?'<span class="mi-clip">📎</span>':''}</div>
+          <div class="mi-meta">${meta}${meta ? ' · ' : ''}${ddmm(m.fecha)}</div>
+        </div>
+        <div class="mi-right">
+          <div class="mi-amt ${inc?'in':'out'}">${inc?'+':'−'}${fmt(m.monto)}</div>
+          ${m.moneda && m.moneda !== 'CLP' ? `<span class="fx-badge">${m.moneda} ${nf(m.moneda==='UF'?1:0).format(m.montoOrig||0)}</span>` : ''}
+          ${pend ? '<span class="pill pendiente">Pendiente</span>' : ''}
+        </div>
       </div>
     </li>`;
   }).join('')}</ul>`;
@@ -342,8 +351,14 @@ function renderCategorias() {
           </div>
         </div>`).join('') : emptyHTML('Sin datos')}
     </div>`;
+  const buds = budgetStatus().sort((a, b) => b.pct - a.pct);
+  const budCard = buds.length ? `<div class="card"><h3>Presupuestos del mes</h3>${buds.map(b => {
+    const cls = b.pct >= 1 ? 'over' : b.pct >= 0.8 ? 'warn' : '';
+    return `<div class="bud-row"><div class="bud-head"><span>${esc(b.nombre)}</span><span>${fmt(b.gasto)} / ${fmt(b.presupuesto)} · ${Math.round(b.pct*100)}%</span></div><div class="bud-bar ${cls}"><i style="width:${Math.min(100, b.pct*100)}%"></i></div></div>`;
+  }).join('')}</div>` : '';
   content.innerHTML = `
     <div class="row-between" style="margin-bottom:14px"><h3 style="font-size:15px">Análisis del mes</h3><button class="btn-ghost sm" id="mgrCatBtn">⚙ Administrar categorías</button></div>
+    ${budCard}
     ${block('Ingresos por categoría', ing)}
     ${block('Egresos por categoría', egr)}`;
   $('#mgrCatBtn').addEventListener('click', openCatModal);
@@ -353,8 +368,33 @@ function emptyHTML(msg) {
   return `<div class="empty"><div class="big">∅</div><p>${msg}</p><button class="btn-primary" onclick="document.getElementById('newBtn').click()">+ Registrar movimiento</button></div>`;
 }
 
+const openMov = (id) => openModal(state.movimientos.find(m => m.id === id));
 function wireRows() {
-  content.querySelectorAll('[data-id]').forEach(el => el.addEventListener('click', () => openModal(state.movimientos.find(m => m.id === el.dataset.id))));
+  content.querySelectorAll('.mitem[data-id]').forEach(attachSwipe);
+  content.querySelectorAll('.rem-item[data-id]').forEach(el => el.addEventListener('click', () => openMov(el.dataset.id)));
+}
+function attachSwipe(li) {
+  const fg = li.querySelector('.mi-fg'); const id = li.dataset.id;
+  let x0 = 0, y0 = 0, dx = 0, active = false, moved = false;
+  fg.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; dx = 0; active = true; moved = false; li.classList.add('swiping'); });
+  fg.addEventListener('pointermove', e => {
+    if (!active) return;
+    const ddx = e.clientX - x0, ddy = e.clientY - y0;
+    if (!moved && Math.abs(ddx) < 6 && Math.abs(ddy) < 6) return;
+    if (Math.abs(ddy) > Math.abs(ddx)) { active = false; fg.style.transform = ''; li.classList.remove('swiping'); return; }
+    moved = true; dx = Math.max(-140, Math.min(140, ddx)); fg.style.transform = `translateX(${dx}px)`;
+    if (e.cancelable) e.preventDefault();
+  });
+  const end = () => {
+    if (!active) return; active = false; li.classList.remove('swiping'); fg.style.transform = '';
+    if (moved && Math.abs(dx) >= 90) {
+      const m = state.movimientos.find(x => x.id === id); if (!m) return;
+      if (dx > 0) { const np = (m.estado || 'pagado') === 'pendiente' ? 'pagado' : 'pendiente'; movStore.update(id, { estado: np, vence: np === 'pendiente' ? (m.vence || '') : '' }); toast(np === 'pagado' ? 'Marcado como pagado/cobrado' : 'Marcado como pendiente'); }
+      else if (confirm('¿Eliminar este movimiento?')) movStore.remove(id);
+    }
+  };
+  fg.addEventListener('pointerup', end); fg.addEventListener('pointercancel', end);
+  fg.addEventListener('click', () => { if (!moved) openMov(id); });
 }
 
 // ── Modal movimiento ──────────────────────────────────────────────────────────
@@ -498,7 +538,8 @@ function renderCatModal() {
     <ul class="cat-mgr-list">
       ${list.map(c => `<li class="cat-mgr-row ${c.oculta?'oculta':''}" data-id="${c.id}">
         <button class="cat-dot" data-act="color" style="background:${esc(c.color||'#586878')}" title="Cambiar color"></button>
-        <span class="cn" data-act="rename" title="Renombrar">${esc(c.nombre)}</span>
+        <span class="cn" data-act="rename" title="Renombrar">${esc(c.nombre)}${Number(c.presupuesto)>0?` <span class="muted-inline">· ${fmt(c.presupuesto)}/mes</span>`:''}</span>
+        <button class="icon-btn" data-act="bud" title="Presupuesto mensual">💰</button>
         <button class="icon-btn" data-act="hide" title="${c.oculta?'Mostrar':'Ocultar'}">${c.oculta?'🙈':'👁'}</button>
         <button class="icon-btn" data-act="del" title="Eliminar">🗑</button>
       </li>`).join('') || '<p class="sub" style="color:var(--muted);padding:8px 0">Sin categorías. Agregá una arriba.</p>'}
@@ -520,6 +561,10 @@ function renderCatModal() {
     row.querySelector('[data-act="rename"]').addEventListener('click', () => {
       const nombre = prompt('Nuevo nombre:', cat.nombre); if (nombre && nombre.trim()) catStore.update(id, { nombre: nombre.trim() });
     });
+    row.querySelector('[data-act="bud"]').addEventListener('click', () => {
+      const v = prompt(`Presupuesto mensual para "${cat.nombre}" (CLP · 0 para quitar):`, cat.presupuesto || '');
+      if (v !== null) catStore.update(id, { presupuesto: Number(v) || 0 });
+    });
     row.querySelector('[data-act="hide"]').addEventListener('click', () => catStore.update(id, { oculta: !cat.oculta }));
     row.querySelector('[data-act="del"]').addEventListener('click', () => { if (confirm(`¿Eliminar la categoría "${cat.nombre}"?`)) catStore.remove(id); });
   });
@@ -531,11 +576,12 @@ catModal.addEventListener('click', e => { if (e.target === catModal) catModal.hi
 function go(view) { state.view = view; render(); window.scrollTo({ top: 0 }); }
 document.querySelectorAll('.nav-item, .bn-item').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
 $('#newBtn').addEventListener('click', () => openModal(null));
-$('#fab').addEventListener('click', () => openModal(null));
+$('#fab').addEventListener('click', () => openQuick());
+$('#cfgBtn').addEventListener('click', openCfg);
 $('#modalClose').addEventListener('click', closeModal);
 $('#cancelBtn').addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!modal.hidden) closeModal(); if (!catModal.hidden) catModal.hidden = true; if (!$('#imgViewer').hidden) $('#imgViewer').hidden = true; } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { ['#modal','#catModal','#quickModal','#cfgModal','#recModal','#imgViewer'].forEach(s => { const el = $(s); if (el && !el.hidden) el.hidden = true; }); } });
 
 $('#prevMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() - 1, 1); render(); });
 $('#nextMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() + 1, 1); render(); });
@@ -638,9 +684,9 @@ async function enableReminders() {
   if (perm !== 'granted') return toast('Permiso de notificaciones denegado');
   localStorage.setItem('finanzas_notif', '1');
   $('#bellBtn').classList.add('on');
-  if (backend?.enablePush) { try { await backend.enablePush(); toast('Recordatorios push activados'); return; } catch {} }
+  if (backend?.enablePush) { try { await backend.enablePush(); toast('Recordatorios push activados'); notifyAll(true); return; } catch {} }
   toast('Recordatorios activados');
-  notifyDue(true);
+  notifyAll(true);
 }
 function notifyDue(force = false) {
   if (localStorage.getItem('finanzas_notif') !== '1' || Notification.permission !== 'granted') return;
@@ -652,7 +698,7 @@ function notifyDue(force = false) {
   const partes = [];
   if (cobrar.length) partes.push(`${cobrar.length} por cobrar (${fmt(sum(cobrar))})`);
   if (pagar.length) partes.push(`${pagar.length} por pagar (${fmt(sum(pagar))})`);
-  try { new Notification('Finanzas Sonqollay — recordatorios', { body: `${venc.length} vencido(s). ${partes.join(' · ')}`, icon: 'logo.png' }); } catch {}
+  showNotif('Recordatorios de cobros/pagos', `${venc.length} vencido(s). ${partes.join(' · ')}`, 'due', [{ action: 'open', title: 'Ver pendientes' }]);
 }
 
 // ── PWA: install + service worker ──────────────────────────────────────────────
@@ -661,8 +707,280 @@ window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferr
 $('#installBtn').addEventListener('click', async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; $('#installBtn').hidden = true; });
 if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
 
+// ── Registro rápido (2 toques) ────────────────────────────────────────────────
+const quickModal = $('#quickModal');
+let quickAmt = '', quickTipo = 'egreso', quickCat = null;
+function openQuick(tipo) {
+  quickTipo = tipo || 'egreso'; quickAmt = ''; quickCat = null;
+  document.querySelector(`input[name="qtipo"][value="${quickTipo}"]`).checked = true;
+  renderQuickChips(); updateQAmount(); quickModal.hidden = false;
+}
+function updateQAmount() { $('#qAmount').textContent = fmt(Number(quickAmt || 0)); }
+function renderQuickChips() {
+  const cats = visibleCats(quickTipo);
+  if (!quickCat || !cats.some(c => c.nombre === quickCat)) quickCat = cats[0]?.nombre;
+  $('#qChips').innerHTML = cats.map(c => `<button type="button" class="chip ${c.nombre===quickCat?'sel':''}" data-cat="${esc(c.nombre)}"><span class="cd" style="background:${esc(c.color||'#586878')}"></span>${esc(c.nombre)}</button>`).join('');
+  $('#qChips').querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { quickCat = b.dataset.cat; renderQuickChips(); }));
+}
+$('#keypad').addEventListener('click', e => {
+  const k = e.target.dataset.k; if (!k) return;
+  if (k === 'back') quickAmt = quickAmt.slice(0, -1);
+  else if ((quickAmt + k).replace(/^0+/, '').length <= 12) quickAmt = (quickAmt === '0' ? '' : quickAmt) + k;
+  updateQAmount();
+});
+document.querySelectorAll('input[name="qtipo"]').forEach(r => r.addEventListener('change', e => { quickTipo = e.target.value; quickCat = null; renderQuickChips(); }));
+$('#quickSave').addEventListener('click', async () => {
+  const monto = Number(quickAmt || 0);
+  if (!monto) return toast('Ingresá un monto');
+  await movStore.add({ tipo: quickTipo, fecha: todayStr(), moneda: 'CLP', montoOrig: monto, tc: 1, monto, categoria: quickCat, descripcion: '', contraparte: '', documento: '', medio: 'Transferencia', estado: 'pagado', iva: true, vence: '', comprobante: '' });
+  quickModal.hidden = true; toast('Guardado');
+});
+$('#quickMore').addEventListener('click', () => {
+  quickModal.hidden = true; openModal(null);
+  document.querySelector(`input[name="tipo"][value="${quickTipo}"]`).checked = true;
+  fillCategorias(quickTipo, quickCat);
+  $('#f_monto').value = quickAmt; updateConvHint();
+});
+$('#quickClose').addEventListener('click', () => quickModal.hidden = true);
+quickModal.addEventListener('click', e => { if (e.target === quickModal) quickModal.hidden = true; });
+
+// ── Ajustes ───────────────────────────────────────────────────────────────────
+const cfgModal = $('#cfgModal');
+function openCfg() { cfgModal.hidden = false; renderCfg(); }
+function renderCfg() {
+  const sw = (id, on, label, desc) => `<div class="cfg-row"><div class="cfg-txt"><b>${label}</b><span>${desc}</span></div><label class="switch"><input type="checkbox" id="${id}" ${on?'checked':''}/><span class="sl"></span></label></div>`;
+  $('#cfgBody').innerHTML = `
+    <div class="cfg-section">
+      <h4>Seguridad</h4>
+      ${sw('cfgLock', LOCK.enabled(), 'Bloqueo con PIN', 'Pide un PIN al abrir la app')}
+      ${LOCK.enabled() ? sw('cfgBio', !!LOCK.bio(), 'Huella / Face ID', 'Desbloqueo biométrico del dispositivo') : ''}
+    </div>
+    <div class="cfg-section">
+      <h4>Notificaciones</h4>
+      <div class="cfg-row"><div class="cfg-txt"><b>Permiso de notificaciones</b><span>${('Notification' in window) && Notification.permission==='granted' ? 'Activado' : 'Tocá para activar'}</span></div><button class="btn-ghost sm" id="cfgEnableNotif">Activar</button></div>
+      ${sw('cfgDue', prefs.nDue, 'Cobros / pagos vencidos', 'Avisa de pendientes por vencer')}
+      ${sw('cfgWeekly', prefs.nWeekly, 'Resumen semanal', 'Cada lunes, balance de la semana')}
+      ${sw('cfgF29', prefs.nF29, 'Recordatorio F29 / IVA', 'Día 12, con el IVA estimado')}
+      ${sw('cfgBudget', prefs.nBudget, 'Alerta de presupuesto', 'Si superás un presupuesto del mes')}
+    </div>
+    <div class="cfg-section">
+      <h4>Automatización</h4>
+      <div class="cfg-row"><div class="cfg-txt"><b>Movimientos recurrentes</b><span>Sueldos, arriendo, suscripciones</span></div><button class="btn-ghost sm" id="cfgRec">Gestionar</button></div>
+    </div>
+    <div class="cfg-section">
+      <h4>Datos</h4>
+      <div class="cfg-row"><div class="cfg-txt"><b>Modo</b><span>${backend?.isCloud ? 'Nube (Firebase) — sincronizado' : 'Local (este dispositivo)'}</span></div></div>
+    </div>`;
+
+  $('#cfgEnableNotif').addEventListener('click', enableReminders);
+  $('#cfgRec').addEventListener('click', openRec);
+  $('#cfgLock').addEventListener('change', async e => {
+    if (e.target.checked) { const ok = await setPin(); if (!ok) { e.target.checked = false; return; } toast('Bloqueo activado'); }
+    else { if (confirm('¿Desactivar el bloqueo?')) { localStorage.removeItem('finanzas_lock'); localStorage.removeItem('finanzas_pinhash'); localStorage.removeItem('finanzas_bio'); toast('Bloqueo desactivado'); } }
+    renderCfg();
+  });
+  $('#cfgBio')?.addEventListener('change', async e => {
+    if (e.target.checked) { const ok = await bioRegister(); if (!ok) e.target.checked = false; else toast('Biometría activada'); }
+    else { localStorage.removeItem('finanzas_bio'); }
+  });
+  [['cfgDue','nDue'],['cfgWeekly','nWeekly'],['cfgF29','nF29'],['cfgBudget','nBudget']].forEach(([id, key]) =>
+    $('#' + id).addEventListener('change', e => { prefs[key] = e.target.checked; savePrefs(); }));
+}
+$('#cfgClose').addEventListener('click', () => cfgModal.hidden = true);
+cfgModal.addEventListener('click', e => { if (e.target === cfgModal) cfgModal.hidden = true; });
+
+// ── Movimientos recurrentes ────────────────────────────────────────────────────
+const recModal = $('#recModal');
+function openRec() { recModal.hidden = false; renderRec(); }
+function renderRec() {
+  const cats = [...visibleCats('egreso'), ...visibleCats('ingreso')];
+  $('#recBody').innerHTML = `
+    <div class="seg tipo-seg">
+      <label class="seg-opt expense"><input type="radio" name="rtipo" value="egreso" checked/> <span>Gasto</span></label>
+      <label class="seg-opt income"><input type="radio" name="rtipo" value="ingreso"/> <span>Ingreso</span></label>
+    </div>
+    <label class="field">Descripción <input type="text" id="rDesc" maxlength="80" placeholder="Ej. Arriendo oficina" /></label>
+    <div class="grid2">
+      <label class="field">Monto (CLP) <input type="number" id="rMonto" min="0" step="1" inputmode="numeric" /></label>
+      <label class="field">Día del mes <input type="number" id="rDia" min="1" max="28" value="1" /></label>
+    </div>
+    <label class="field">Categoría <select id="rCat">${cats.map(c => `<option>${esc(c.nombre)}</option>`).join('')}</select></label>
+    <div class="modal-foot"><span class="spacer"></span><button class="btn-primary" id="rAdd">Agregar recurrente</button></div>
+    <h4 style="margin:8px 0;color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.5px">Activos</h4>
+    ${state.recurrentes.length ? state.recurrentes.map(r => `
+      <div class="rec-row" data-id="${r.id}">
+        <div class="mi-ic ${r.tipo==='ingreso'?'in':'out'}">${r.tipo==='ingreso'?'↑':'↓'}</div>
+        <div class="rec-main"><b>${esc(r.descripcion || r.categoria)}</b><span>${esc(r.categoria)} · día ${r.dia} · ${fmt(r.monto)}</span></div>
+        <button class="btn-ghost sm" data-act="now">Repetir hoy</button>
+        <label class="switch"><input type="checkbox" data-act="toggle" ${r.activo?'checked':''}/><span class="sl"></span></label>
+        <button class="icon-btn" data-act="del">🗑</button>
+      </div>`).join('') : '<p class="sub" style="color:var(--muted);padding:6px 0">Sin recurrentes todavía.</p>'}`;
+
+  document.querySelectorAll('input[name="rtipo"]').forEach(r => r.addEventListener('change', () => {
+    const tipo = document.querySelector('input[name="rtipo"]:checked').value;
+    $('#rCat').innerHTML = visibleCats(tipo).map(c => `<option>${esc(c.nombre)}</option>`).join('');
+  }));
+  $('#rAdd').addEventListener('click', async () => {
+    const tipo = document.querySelector('input[name="rtipo"]:checked').value;
+    const monto = Number($('#rMonto').value || 0); if (!monto) return toast('Ingresá un monto');
+    await recStore.add({ tipo, descripcion: $('#rDesc').value.trim(), monto, dia: Math.min(28, Math.max(1, Number($('#rDia').value || 1))), categoria: $('#rCat').value, moneda: 'CLP', activo: true });
+    toast('Recurrente agregado');
+  });
+  $('#recBody').querySelectorAll('.rec-row').forEach(row => {
+    const id = row.dataset.id, r = state.recurrentes.find(x => x.id === id);
+    row.querySelector('[data-act="toggle"]').addEventListener('change', e => recStore.update(id, { activo: e.target.checked }));
+    row.querySelector('[data-act="del"]').addEventListener('click', () => { if (confirm('¿Eliminar este recurrente?')) recStore.remove(id); });
+    row.querySelector('[data-act="now"]').addEventListener('click', async () => {
+      await movStore.add({ tipo: r.tipo, fecha: todayStr(), moneda: 'CLP', montoOrig: r.monto, tc: 1, monto: r.monto, categoria: r.categoria, descripcion: r.descripcion || r.categoria, contraparte: '', documento: '', medio: 'Transferencia', estado: 'pagado', iva: true, vence: '', comprobante: '', recId: r.id });
+      toast('Movimiento creado');
+    });
+  });
+}
+$('#recClose').addEventListener('click', () => recModal.hidden = true);
+recModal.addEventListener('click', e => { if (e.target === recModal) recModal.hidden = true; });
+
+async function generateRecurrentes() {
+  const ym = todayStr().slice(0, 7), dnum = new Date().getDate();
+  for (const r of state.recurrentes) {
+    if (!r.activo || dnum < (r.dia || 1)) continue;
+    if (state.movimientos.some(m => m.recId === r.id && (m.fecha || '').slice(0, 7) === ym)) continue;
+    await movStore.add({ tipo: r.tipo, fecha: `${ym}-${String(r.dia || 1).padStart(2, '0')}`, moneda: 'CLP', montoOrig: r.monto, tc: 1, monto: r.monto, categoria: r.categoria, descripcion: r.descripcion || r.categoria, contraparte: '', documento: '', medio: 'Transferencia', estado: 'pagado', iva: true, vence: '', comprobante: '', recId: r.id });
+  }
+}
+
+// ── Bloqueo con PIN / biometría ────────────────────────────────────────────────
+const lockScreen = $('#lockScreen');
+const LOCK = {
+  enabled: () => localStorage.getItem('finanzas_lock') === '1',
+  pin: () => localStorage.getItem('finanzas_pinhash'),
+  bio: () => localStorage.getItem('finanzas_bio'),
+};
+async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+let pinBuf = '', pinStep = 'unlock', pinTemp = '', pinCb = null;
+(function buildLockPad() {
+  const pad = $('#lockPad');
+  pad.innerHTML = [1,2,3,4,5,6,7,8,9].map(n => `<button type="button" data-d="${n}">${n}</button>`).join('')
+    + `<button type="button" class="flat" data-act="bio2">👆</button><button type="button" data-d="0">0</button><button type="button" class="flat" data-act="back">⌫</button>`;
+  pad.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.d != null) pinPush(b.dataset.d);
+    else if (b.dataset.act === 'back') { pinBuf = pinBuf.slice(0, -1); paintDots(); }
+    else if (b.dataset.act === 'bio2') $('#bioBtn').click();
+  });
+})();
+function paintDots(err) {
+  $('#pinDots').querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i < pinBuf.length));
+  $('#lockTitle').classList.toggle('err', !!err);
+}
+async function pinPush(d) {
+  if (pinBuf.length >= 4) return;
+  pinBuf += d; paintDots();
+  if (pinBuf.length < 4) return;
+  const val = pinBuf; pinBuf = '';
+  if (pinStep === 'unlock') {
+    if (await sha(val) === LOCK.pin()) hideLock(); else { setTimeout(() => { paintDots(true); $('#lockTitle').textContent = 'PIN incorrecto'; }, 80); }
+  } else if (pinStep === 'set') {
+    pinTemp = val; pinStep = 'confirm'; $('#lockTitle').textContent = 'Repetí el PIN'; setTimeout(paintDots, 60);
+  } else if (pinStep === 'confirm') {
+    if (val === pinTemp) { localStorage.setItem('finanzas_pinhash', await sha(val)); localStorage.setItem('finanzas_lock', '1'); lockScreen.hidden = true; pinCb && pinCb(true); pinCb = null; }
+    else { pinStep = 'set'; $('#lockTitle').textContent = 'No coincide, creá el PIN'; setTimeout(() => paintDots(true), 60); }
+  }
+}
+function showLock(step) { pinStep = step; pinBuf = ''; pinTemp = ''; $('#lockTitle').textContent = step === 'set' ? 'Creá un PIN (4 dígitos)' : 'Ingresá tu PIN'; $('#lockTitle').classList.remove('err'); paintDots(); $('#bioBtn').hidden = !(step === 'unlock' && LOCK.bio()); lockScreen.hidden = false; }
+function hideLock() { lockScreen.hidden = true; }
+function setPin() { return new Promise(res => { pinCb = res; showLock('set'); }); }
+function maybeLock() { if (LOCK.enabled() && LOCK.pin()) showLock('unlock'); }
+$('#bioBtn').addEventListener('click', async () => { if (await bioVerify()) hideLock(); else toast('No se pudo verificar'); });
+
+async function bioRegister() {
+  if (!window.PublicKeyCredential) { toast('Este dispositivo no soporta biometría'); return false; }
+  try {
+    const cred = await navigator.credentials.create({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rp: { name: 'Finanzas Sonqollay' },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'finanzas', displayName: 'Finanzas Sonqollay' },
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+      timeout: 60000,
+    }});
+    localStorage.setItem('finanzas_bio', btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+    return true;
+  } catch { toast('No se pudo registrar la biometría'); return false; }
+}
+async function bioVerify() {
+  const id = LOCK.bio(); if (!id) return false;
+  try {
+    await navigator.credentials.get({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials: [{ type: 'public-key', id: Uint8Array.from(atob(id), c => c.charCodeAt(0)) }],
+      userVerification: 'required', timeout: 60000,
+    }});
+    return true;
+  } catch { return false; }
+}
+// Auto-bloqueo al volver a la app tras 30 s en segundo plano
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) hiddenAt = Date.now();
+  else if (LOCK.enabled() && LOCK.pin() && lockScreen.hidden && hiddenAt && Date.now() - hiddenAt > 30000) maybeLock();
+});
+
+// ── Notificaciones inteligentes (local; Cloud Functions en Modo nube) ───────────
+async function showNotif(title, body, tag, actions) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try { const reg = await navigator.serviceWorker.getRegistration(); if (reg?.showNotification) return reg.showNotification(title, { body, tag, icon: 'logo.png', badge: 'logo.png', actions: actions || [] }); } catch {}
+  try { new Notification(title, { body, tag, icon: 'logo.png' }); } catch {}
+}
+const mondayOf = (d) => { const x = new Date(d); const day = (x.getDay() + 6) % 7; x.setDate(x.getDate() - day); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; };
+function rangeTotals(from, to) {
+  const ms = state.movimientos.filter(m => m.fecha >= from && m.fecha <= to && m.estado !== 'pendiente');
+  return { tIn: sum(ms.filter(m => m.tipo === 'ingreso')), tOut: sum(ms.filter(m => m.tipo === 'egreso')) };
+}
+function notifyWeekly() {
+  if (Notification?.permission !== 'granted') return;
+  const thisMon = mondayOf(new Date());
+  if (localStorage.getItem('finanzas_n_weekly') === thisMon) return;
+  localStorage.setItem('finanzas_n_weekly', thisMon);
+  const t = rangeTotals(addDays(thisMon, -7), addDays(thisMon, -1));
+  if (!t.tIn && !t.tOut) return;
+  showNotif('Resumen semanal', `La semana pasada: ingresos ${fmt(t.tIn)}, egresos ${fmt(t.tOut)}. Balance ${fmt(t.tIn - t.tOut)}.`, 'weekly');
+}
+function notifyF29() {
+  if (Notification?.permission !== 'granted') return;
+  const now = new Date(), dnum = now.getDate(), ym = todayStr().slice(0, 7);
+  if (dnum < 12 || dnum > 25) return;
+  if (localStorage.getItem('finanzas_n_f29') === ym) return;
+  localStorage.setItem('finanzas_n_f29', ym);
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const t = monthTotals(state.movimientos.filter(m => inMonth(m, prev.getFullYear(), prev.getMonth())));
+  showNotif('Recordatorio F29 / IVA', `Declara el F29 de ${MESES[prev.getMonth()]}. IVA estimado: ${fmt(t.iva)}.`, 'f29');
+}
+function budgetStatus() {
+  const movs = monthMovs();
+  return state.categorias.filter(c => Number(c.presupuesto) > 0).map(c => {
+    const gasto = sum(movs.filter(m => m.tipo === c.tipo && m.categoria === c.nombre && m.estado !== 'pendiente'));
+    return { ...c, gasto, pct: gasto / c.presupuesto };
+  });
+}
+function notifyBudget() {
+  if (Notification?.permission !== 'granted') return;
+  const over = budgetStatus().filter(b => b.pct >= 1);
+  if (!over.length) return;
+  if (localStorage.getItem('finanzas_n_budget') === todayStr()) return;
+  localStorage.setItem('finanzas_n_budget', todayStr());
+  showNotif('Presupuesto superado', over.map(b => `${b.nombre}: ${Math.round(b.pct*100)}%`).join(' · '), 'budget');
+}
+function notifyAll(force) {
+  if (localStorage.getItem('finanzas_notif') !== '1') return;
+  if (prefs.nDue) notifyDue(force);
+  if (prefs.nWeekly) notifyWeekly();
+  if (prefs.nF29) notifyF29();
+  if (prefs.nBudget) notifyBudget();
+}
+
 // ── Arranque ────────────────────────────────────────────────────────────────────
 (async function init() {
+  maybeLock(); // pantalla de bloqueo antes de mostrar datos
   try { backend = await makeFirebaseBackend(); } catch { backend = null; }
   if (backend) {
     $('#syncState').classList.add('cloud'); $('#syncLabel').textContent = 'Nube (Firebase)';
@@ -674,6 +992,10 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
 
   movStore = backend.collection('movimientos');
   catStore = backend.collection('categorias');
+  recStore = backend.collection('recurrentes');
+
+  let loadedRec = false, loadedMov = false, genDone = false;
+  const tryGen = () => { if (loadedRec && loadedMov && !genDone) { genDone = true; generateRecurrentes(); } };
 
   await catStore.init((data) => {
     state.categorias = data;
@@ -684,7 +1006,12 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
     if (state.view === 'categorias') render();
     if (!catModal.hidden) renderCatModal();
   });
-  await movStore.init((data) => { state.movimientos = data; render(); notifyDue(); });
+  await recStore.init((data) => { state.recurrentes = data; loadedRec = true; tryGen(); if (!recModal.hidden) renderRec(); });
+  await movStore.init((data) => { state.movimientos = data; render(); notifyAll(); loadedMov = true; tryGen(); });
   render();
   loadIndicadores();
+
+  // Atajos PWA (?quick=egreso|ingreso)
+  const q = new URLSearchParams(location.search).get('quick');
+  if (q === 'egreso' || q === 'ingreso') { openQuick(q); history.replaceState({}, '', location.pathname); }
 })();
