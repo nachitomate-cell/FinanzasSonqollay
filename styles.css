@@ -24,7 +24,9 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* Mobile-first: sin doble-tap zoom, sin rebote/pull-to-refresh */
+body { touch-action: manipulation; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 
 /* Iconos SVG */
 .ic { width: 21px; height: 21px; flex: 0 0 auto; stroke-width: 2; }

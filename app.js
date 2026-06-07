@@ -736,6 +736,10 @@ $('#cancelBtn').addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { ['#modal','#catModal','#quickModal','#cfgModal','#recModal','#ctaModal','#imgViewer'].forEach(s => { const el = $(s); if (el && !el.hidden) el.hidden = true; }); } });
 
+// Mobile-first: bloquear pinch-zoom (gestos de iOS Safari). El doble-tap y el
+// auto-zoom de inputs ya se evitan con touch-action + viewport + inputs 16px.
+['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
+
 $('#prevMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() - 1, 1); render(); });
 $('#nextMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() + 1, 1); render(); });
 $('#todayBtn').addEventListener('click', () => { state.ref = new Date(); render(); });
