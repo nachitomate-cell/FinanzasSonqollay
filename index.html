@@ -99,10 +99,18 @@
           <label class="field">Fecha
             <input type="date" id="f_fecha" required />
           </label>
-          <label class="field">Monto (CLP)
-            <input type="number" id="f_monto" min="0" step="1" inputmode="numeric" placeholder="0" required />
+          <label class="field">Moneda
+            <select id="f_moneda">
+              <option value="CLP">CLP — peso</option>
+              <option value="USD">USD — dólar</option>
+              <option value="UF">UF</option>
+            </select>
           </label>
         </div>
+        <label class="field">Monto <span class="muted-inline" id="montoCur">(CLP)</span>
+          <input type="number" id="f_monto" min="0" step="any" inputmode="decimal" placeholder="0" required />
+        </label>
+        <div class="conv-hint" id="convHint" hidden></div>
         <label class="field">Categoría
           <select id="f_categoria" required></select>
         </label>

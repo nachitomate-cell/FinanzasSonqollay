@@ -93,6 +93,34 @@ const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${Stri
 const addDays = (str, n) => { const d = new Date(str + 'T00:00:00'); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const ddmm = (str) => { const d = new Date(str + 'T00:00:00'); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`; };
 
+// ── Indicadores en vivo (Dólar observado / UF) · mindicador.cl ────────────────
+const INDIC_KEY = 'finanzas_indicadores';
+const indic = { dolar: null, uf: null, fechaDolar: '', fechaUf: '' };
+const rate = (moneda) => moneda === 'USD' ? indic.dolar : moneda === 'UF' ? indic.uf : 1;
+const nf = (dec) => new Intl.NumberFormat('es-CL', { maximumFractionDigits: dec, minimumFractionDigits: dec });
+const eqUSD = (clp) => indic.dolar ? 'US$ ' + nf(0).format(clp / indic.dolar) : '—';
+const eqUF  = (clp) => indic.uf ? 'UF ' + nf(1).format(clp / indic.uf) : '—';
+const fmtFX = (n) => '$' + nf(2).format(n); // tipo de cambio con 2 decimales
+
+async function loadIndicadores() {
+  try { Object.assign(indic, JSON.parse(localStorage.getItem(INDIC_KEY)) || {}); } catch {}
+  try {
+    const j = await (await fetch('https://mindicador.cl/api', { cache: 'no-store' })).json();
+    if (j.dolar) { indic.dolar = j.dolar.valor; indic.fechaDolar = (j.dolar.fecha || '').slice(0, 10); }
+    if (j.uf)    { indic.uf = j.uf.valor;       indic.fechaUf = (j.uf.fecha || '').slice(0, 10); }
+    localStorage.setItem(INDIC_KEY, JSON.stringify(indic));
+  } catch { /* offline: usa el último valor cacheado */ }
+  if (state.view === 'dashboard') render();
+  if (!modal.hidden) updateConvHint();
+}
+function tickerHTML() {
+  return `<div class="ticker" id="ticker" title="Tocar para actualizar">
+    <div class="tk"><span class="lbl">USD</span> <b>${indic.dolar ? fmtFX(indic.dolar) : '—'}</b></div>
+    <div class="tk uf"><span class="lbl">UF</span> <b>${indic.uf ? fmtFX(indic.uf) : '—'}</b></div>
+    <span class="tk-date">${indic.fechaUf ? 'al ' + ddmm(indic.fechaUf) : 'sin conexión'} · mindicador.cl</span>
+  </div>`;
+}
+
 // ── Selectores derivados ──────────────────────────────────────────────────────
 const inMonth = (m, y, mo) => { const x = new Date(m.fecha + 'T00:00:00'); return x.getFullYear() === y && x.getMonth() === mo; };
 const monthMovs = () => state.movimientos.filter(m => inMonth(m, state.ref.getFullYear(), state.ref.getMonth()));
@@ -152,10 +180,11 @@ function renderDashboard() {
   const rem = reminders();
 
   content.innerHTML = `
+    ${tickerHTML()}
     <div class="kpis">
-      <div class="kpi income"><div class="label"><span class="tag"></span>Ingresos del mes</div><div class="value">${fmt(t.tIn)}</div><div class="sub">${movs.filter(m=>m.tipo==='ingreso'&&m.estado!=='pendiente').length} movimientos</div></div>
-      <div class="kpi expense"><div class="label"><span class="tag"></span>Egresos del mes</div><div class="value">${fmt(t.tOut)}</div><div class="sub">${movs.filter(m=>m.tipo==='egreso'&&m.estado!=='pendiente').length} movimientos</div></div>
-      <div class="kpi balance"><div class="label"><span class="tag"></span>Balance neto</div><div class="value" style="color:${t.balance>=0?'var(--income)':'var(--expense)'}">${fmt(t.balance)}</div><div class="sub">Ingresos − egresos</div></div>
+      <div class="kpi income"><div class="label"><span class="tag"></span>Ingresos del mes</div><div class="value">${fmt(t.tIn)}</div><div class="sub">≈ ${eqUSD(t.tIn)} · ${eqUF(t.tIn)}</div></div>
+      <div class="kpi expense"><div class="label"><span class="tag"></span>Egresos del mes</div><div class="value">${fmt(t.tOut)}</div><div class="sub">≈ ${eqUSD(t.tOut)} · ${eqUF(t.tOut)}</div></div>
+      <div class="kpi balance"><div class="label"><span class="tag"></span>Balance neto</div><div class="value" style="color:${t.balance>=0?'var(--income)':'var(--expense)'}">${fmt(t.balance)}</div><div class="sub">≈ ${eqUSD(t.balance)} · ${eqUF(t.balance)}</div></div>
       <div class="kpi pending"><div class="label"><span class="tag"></span>Por cobrar</div><div class="value" style="color:var(--warn)">${fmt(t.porCobrar)}</div><div class="sub">Por pagar: ${fmt(t.porPagar)}</div></div>
     </div>
 
@@ -184,6 +213,7 @@ function renderDashboard() {
     </div>`;
 
   $('#goMovs')?.addEventListener('click', () => go('movimientos'));
+  $('#ticker')?.addEventListener('click', () => { toast('Actualizando indicadores…'); loadIndicadores(); });
   wireRows();
 }
 
@@ -248,6 +278,7 @@ function itemsHTML(movs) {
       </div>
       <div class="mi-right">
         <div class="mi-amt ${inc?'in':'out'}">${inc?'+':'−'}${fmt(m.monto)}</div>
+        ${m.moneda && m.moneda !== 'CLP' ? `<span class="fx-badge">${m.moneda} ${nf(m.moneda==='UF'?1:0).format(m.montoOrig||0)}</span>` : ''}
         ${pend ? '<span class="pill pendiente">Pendiente</span>' : ''}
       </div>
     </li>`;
@@ -340,6 +371,17 @@ function fillCategorias(tipo, selected) {
   }
 }
 function toggleVence() { $('#venceField').hidden = $('#f_estado').value !== 'pendiente'; }
+function updateMontoCur() { $('#montoCur').textContent = '(' + $('#f_moneda').value + ')'; }
+function updateConvHint() {
+  const cur = $('#f_moneda')?.value; if (!cur) return;
+  const hint = $('#convHint');
+  if (cur === 'CLP') { hint.hidden = true; return; }
+  const r = rate(cur), val = Number($('#f_monto').value || 0);
+  hint.hidden = false;
+  if (!r) { hint.innerHTML = '⚠ Sin valor de cambio disponible. Conectate para traer USD/UF.'; return; }
+  const fch = ddmm(cur === 'UF' ? indic.fechaUf : indic.fechaDolar);
+  hint.innerHTML = `≈ <b>${fmt(val * r)} CLP</b> &nbsp;·&nbsp; TC ${cur} ${fmtFX(r)}${fch ? ' (' + fch + ')' : ''}`;
+}
 function setComprobante(dataURL) {
   currentComprobante = dataURL || null;
   $('#attachPreview').hidden = !dataURL;
@@ -355,7 +397,9 @@ function openModal(mov) {
   fillCategorias(tipo, mov?.categoria);
   $('#f_id').value = mov?.id || '';
   $('#f_fecha').value = mov?.fecha || todayStr();
-  $('#f_monto').value = mov?.monto ?? '';
+  $('#f_moneda').value = mov?.moneda || 'CLP';
+  $('#f_monto').value = mov?.montoOrig ?? mov?.monto ?? '';
+  updateMontoCur(); updateConvHint();
   $('#f_descripcion').value = mov?.descripcion || '';
   $('#f_contraparte').value = mov?.contraparte || '';
   $('#f_documento').value = mov?.documento || '';
@@ -370,6 +414,8 @@ function closeModal() { modal.hidden = true; }
 
 document.querySelectorAll('input[name="tipo"]').forEach(r => r.addEventListener('change', e => fillCategorias(e.target.value)));
 $('#f_estado').addEventListener('change', toggleVence);
+$('#f_moneda').addEventListener('change', () => { updateMontoCur(); updateConvHint(); });
+$('#f_monto').addEventListener('input', updateConvHint);
 $('#attachBtn').addEventListener('click', () => $('#f_file').click());
 $('#attachRemove').addEventListener('click', () => { $('#f_file').value = ''; setComprobante(null); });
 $('#attachImg').addEventListener('click', () => openImg(currentComprobante));
@@ -396,10 +442,17 @@ function compressImage(file, maxDim = 1200, quality = 0.6) {
 $('#movForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const estado = $('#f_estado').value;
+  const moneda = $('#f_moneda').value;
+  const montoOrig = Number($('#f_monto').value || 0);
+  const r = rate(moneda);
+  if (moneda !== 'CLP' && !r) return toast('No hay tipo de cambio disponible. Conectate para traer USD/UF.');
   const obj = {
     tipo: document.querySelector('input[name="tipo"]:checked').value,
     fecha: $('#f_fecha').value,
-    monto: Number($('#f_monto').value || 0),
+    moneda,
+    montoOrig,
+    tc: moneda === 'CLP' ? 1 : r,
+    monto: moneda === 'CLP' ? montoOrig : Math.round(montoOrig * r),
     categoria: $('#f_categoria').value,
     descripcion: $('#f_descripcion').value.trim(),
     contraparte: $('#f_contraparte').value.trim(),
@@ -508,8 +561,8 @@ function exportSet() {
   else etiqueta = `${state.ref.getFullYear()}-${String(state.ref.getMonth()+1).padStart(2,'0')}`;
   return { movs, etiqueta };
 }
-const COLS = ['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Contraparte', 'Documento', 'Medio', 'Estado', 'Vence', 'IVA', 'Monto'];
-const rowOf = (m) => [m.fecha, m.tipo, m.categoria, m.descripcion, m.contraparte, m.documento, m.medio, m.estado, m.vence, m.iva ? 'Sí' : 'No', Number(m.monto || 0)];
+const COLS = ['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Contraparte', 'Documento', 'Medio', 'Estado', 'Vence', 'IVA', 'Moneda', 'Monto orig.', 'Tipo cambio', 'Monto CLP'];
+const rowOf = (m) => [m.fecha, m.tipo, m.categoria, m.descripcion, m.contraparte, m.documento, m.medio, m.estado, m.vence, m.iva ? 'Sí' : 'No', m.moneda || 'CLP', Number(m.montoOrig ?? m.monto ?? 0), Number(m.tc || 1), Number(m.monto || 0)];
 
 function doExport(kind) {
   const { movs } = exportSet();
@@ -560,13 +613,15 @@ async function exportPDF(movs) {
     doc.setFontSize(10); doc.setTextColor('#1b232b');
     doc.text(`Ingresos: ${fmt(t.tIn)}    Egresos: ${fmt(t.tOut)}    Balance: ${fmt(t.balance)}`, 14, 34);
     doc.text(`Por cobrar: ${fmt(t.porCobrar)}    Por pagar: ${fmt(t.porPagar)}    IVA estimado: ${fmt(t.iva)}`, 14, 40);
+    doc.setTextColor('#586878');
+    doc.text(`Tipo de cambio: USD ${indic.dolar?fmtFX(indic.dolar):'—'}  ·  UF ${indic.uf?fmtFX(indic.uf):'—'}${indic.fechaUf?' (al '+ddmm(indic.fechaUf)+')':''}`, 14, 46);
     doc.autoTable({
-      startY: 46,
-      head: [['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Contraparte', 'Estado', 'Monto']],
-      body: movs.map(m => [m.fecha, m.tipo, m.categoria, m.descripcion || '', m.contraparte || '', m.estado || 'pagado', fmt(m.monto)]),
+      startY: 52,
+      head: [['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Contraparte', 'Estado', 'Moneda', 'Monto CLP']],
+      body: movs.map(m => [m.fecha, m.tipo, m.categoria, m.descripcion || '', m.contraparte || '', m.estado || 'pagado', m.moneda || 'CLP', fmt(m.monto)]),
       styles: { fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [88, 104, 120] },
-      columnStyles: { 6: { halign: 'right' } },
+      columnStyles: { 7: { halign: 'right' } },
     });
     doc.save(`finanzas-sonqollay-${etiqueta}.pdf`);
     toast('PDF exportado');
@@ -631,4 +686,5 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
   });
   await movStore.init((data) => { state.movimientos = data; render(); notifyDue(); });
   render();
+  loadIndicadores();
 })();

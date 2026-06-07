@@ -28,8 +28,14 @@ Parte del ecosistema Sonqollay junto a *Aura BIM* (`dbsonqollay`) y *SonqollayAP
 - **Por categoría**: desglose porcentual con el color de cada categoría.
 - **Búsqueda global y filtros**: por tipo, estado y **alcance** (mes / año /
   todo el historial / **rango de fechas** personalizado).
-- **Exportación**: **CSV**, **Excel (.xlsx)** y **PDF** (reporte con resumen y
-  tabla), respetando el período/alcance seleccionado.
+- **Multimoneda en vivo (Dólar / UF)**: ticker con el **dólar observado** y la
+  **UF** del día (fuente [mindicador.cl](https://mindicador.cl), valores
+  oficiales que se publican una vez al día; se cachean para uso offline). Podés
+  cargar un movimiento en **USD** o **UF** y se **convierte y guarda en CLP**
+  automáticamente (se conserva la moneda, el monto original y el tipo de cambio
+  usado). Los KPIs muestran su equivalente en USD/UF.
+- **Exportación**: **CSV**, **Excel (.xlsx)** y **PDF** (reporte con resumen,
+  tipo de cambio del día y tabla), respetando el período/alcance seleccionado.
 - **PWA**: instalable en escritorio/móvil, app shell cacheada para uso offline.
 
 ## Modo de datos
