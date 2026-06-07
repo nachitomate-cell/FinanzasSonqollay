@@ -60,7 +60,8 @@ const LocalBackend = {
 async function makeFirebaseBackend() {
   let config, VAPID_KEY;
   try { ({ firebaseConfig: config, VAPID_KEY } = await import('./firebase-config.js')); }
-  catch { return null; } // no hay config → Modo local
+  catch { return null; }
+  if (!config || !config.apiKey) return null; // sin credenciales → Modo local
 
   const APP = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
   const AUTH = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
@@ -123,7 +124,7 @@ function tickerHTML() {
   return `<div class="ticker" id="ticker" title="Tocar para actualizar">
     <div class="tk"><span class="lbl">USD</span> <b>${indic.dolar ? fmtFX(indic.dolar) : '—'}</b></div>
     <div class="tk uf"><span class="lbl">UF</span> <b>${indic.uf ? fmtFX(indic.uf) : '—'}</b></div>
-    <span class="tk-date">${indic.fechaUf ? 'al ' + ddmm(indic.fechaUf) : 'sin conexión'} · mindicador.cl</span>
+    <span class="tk-date">${indic.fechaUf ? 'al ' + ddmm(indic.fechaUf) : 'sin conexión'}</span>
   </div>`;
 }
 

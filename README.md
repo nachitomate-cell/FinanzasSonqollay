@@ -78,8 +78,9 @@ python -m http.server 8080
 ## Activar sincronización en la nube (opcional)
 
 1. Firebase Console → crear proyecto → agregar **App web** y copiar el config.
-2. Copiar `firebase-config.example.js` como **`firebase-config.js`** y pegar los
-   valores. (Está en `.gitignore`, no se sube al repo.)
+2. Editar **`firebase-config.js`** y reemplazar `firebaseConfig = null` por el
+   objeto con tus valores. (La config web de Firebase no es secreta, por eso se
+   versiona; la seguridad va por las reglas de Firestore.)
 3. **Authentication** → habilitar el método **Anónimo**.
 4. **Firestore Database** → crear, y publicar las reglas de `firestore.rules`.
 

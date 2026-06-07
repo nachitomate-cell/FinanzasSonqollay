@@ -1,5 +1,5 @@
 // Service worker — cache de shell para offline.
-const CACHE = 'finanzas-sonqollay-v5';
+const CACHE = 'finanzas-sonqollay-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -36,59 +36,48 @@ self.addEventListener('notificationclick', (e) => {
   }));
 });
 
+const putCache = (req, res) => { if (res && res.ok && new URL(req.url).origin === self.location.origin) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {}); } };
+
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
 
-  // No interceptar Firebase / Google APIs
+  // Solo http(s) (ignora chrome-extension, etc.)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+  // No interceptar: APIs externas ni archivos de config opcionales (pueden no existir → 404).
   if (
     url.hostname.endsWith('googleapis.com') ||
     url.hostname.endsWith('firebaseio.com') ||
-    (url.hostname.endsWith('gstatic.com') && !url.pathname.includes('/firebasejs/'))
+    url.hostname === 'mindicador.cl' ||
+    (url.hostname.endsWith('gstatic.com') && !url.pathname.includes('/firebasejs/')) ||
+    /firebase-config(-compat)?\.js$/.test(url.pathname)
   ) return;
 
-  // SDK de Firebase: stale-while-revalidate para offline resiliente
+  // SDK de Firebase: stale-while-revalidate
   if (url.hostname.endsWith('gstatic.com') && url.pathname.includes('/firebasejs/')) {
-    e.respondWith(
-      caches.match(e.request).then(cached => {
-        const network = fetch(e.request).then(res => {
-          if (res && res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-          }
-          return res;
-        }).catch(() => cached);
-        return cached || network;
-      })
-    );
+    e.respondWith((async () => {
+      const cached = await caches.match(e.request);
+      const network = fetch(e.request).then(res => { putCache(e.request, res); return res; });
+      return cached || network.catch(() => cached || Response.error());
+    })());
     return;
   }
 
   // index.html: network-first para recibir siempre el último deploy
   if (url.pathname === '/' || url.pathname.endsWith('/index.html')) {
-    e.respondWith(
-      fetch(e.request, { cache: 'no-cache' })
-        .then(res => {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-          return res;
-        })
-        .catch(() => caches.match(e.request))
-    );
+    e.respondWith((async () => {
+      try { const res = await fetch(e.request, { cache: 'no-cache' }); putCache(e.request, res); return res; }
+      catch { return (await caches.match(e.request)) || (await caches.match('./index.html')) || Response.error(); }
+    })());
     return;
   }
 
-  // Resto: cache-first, actualiza en background
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      const network = fetch(e.request).then(res => {
-        if (res && res.ok && url.origin === self.location.origin) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-        }
-        return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
-  );
+  // Resto: cache-first, revalida en segundo plano; nunca resuelve a undefined.
+  e.respondWith((async () => {
+    const cached = await caches.match(e.request);
+    if (cached) { fetch(e.request).then(res => putCache(e.request, res)).catch(() => {}); return cached; }
+    try { const res = await fetch(e.request); putCache(e.request, res); return res; }
+    catch { return Response.error(); }
+  })());
 });

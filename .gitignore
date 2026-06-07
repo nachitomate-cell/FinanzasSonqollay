@@ -1,5 +1,4 @@
 node_modules/
-firebase-config.js
 firebase-config-compat.js
 .firebase/
 *.log
