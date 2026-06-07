@@ -89,7 +89,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<':
 
 function render() {
   $('#periodLabel').textContent = `${MESES[state.ref.getMonth()]} ${state.ref.getFullYear()}`;
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
+  document.querySelectorAll('.nav-item, .bn-item').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
   ({ dashboard: renderDashboard, movimientos: renderMovimientos, flujo: renderFlujo, categorias: renderCategorias }[state.view])();
 }
 
@@ -113,7 +113,7 @@ function renderDashboard() {
 
     <div class="card">
       <div class="row-between" style="margin-bottom:8px"><h3>Movimientos recientes</h3><button class="btn-ghost sm" id="goMovs">Ver todos</button></div>
-      ${recientes.length ? tableHTML(recientes) : emptyHTML('Sin movimientos este mes')}
+      ${recientes.length ? itemsHTML(recientes) : emptyHTML('Sin movimientos este mes')}
     </div>`;
 
   $('#goMovs')?.addEventListener('click', () => go('movimientos'));
@@ -144,7 +144,7 @@ function renderMovimientos() {
         <option value="pendiente">Pendiente</option>
       </select>
     </div>
-    ${movs.length ? tableHTML(movs, true) : emptyHTML('Sin movimientos con estos filtros')}`;
+    ${movs.length ? itemsHTML(movs) : emptyHTML('Sin movimientos con estos filtros')}`;
 
   const s = $('#search');
   s.addEventListener('input', () => { state.search = s.value; const p = s.selectionStart; renderMovimientos(); const ns = $('#search'); ns.focus(); ns.setSelectionRange(p, p); });
@@ -154,23 +154,25 @@ function renderMovimientos() {
   wireRows();
 }
 
-function tableHTML(movs, full = false) {
-  return `<div class="table-wrap"><table>
-    <thead><tr>
-      <th>Fecha</th><th>Descripción</th><th>Categoría</th>${full ? '<th>Contraparte</th>' : ''}<th>Estado</th><th style="text-align:right">Monto</th>
-    </tr></thead>
-    <tbody>${movs.map(m => {
-      const inc = m.tipo === 'ingreso';
-      const d = new Date(m.fecha + 'T00:00:00');
-      return `<tr data-id="${m.id}">
-        <td>${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</td>
-        <td><span class="pill ${inc?'in':'out'}">${inc?'Ingreso':'Egreso'}</span> ${esc(m.descripcion) || '<span style="color:var(--muted)">—</span>'}</td>
-        <td>${esc(m.categoria)}</td>
-        ${full ? `<td>${esc(m.contraparte) || '—'}</td>` : ''}
-        <td><span class="pill ${m.estado||'pagado'}">${(m.estado||'pagado')==='pendiente'?'Pendiente':'Pagado'}</span></td>
-        <td class="amount ${inc?'in':'out'}">${inc?'+':'−'}${fmt(m.monto)}</td>
-      </tr>`;
-    }).join('')}</tbody></table></div>`;
+function itemsHTML(movs) {
+  return `<ul class="mlist">${movs.map(m => {
+    const inc = m.tipo === 'ingreso';
+    const d = new Date(m.fecha + 'T00:00:00');
+    const fch = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+    const meta = [m.categoria, m.contraparte].filter(Boolean).map(esc).join(' · ');
+    const pend = (m.estado || 'pagado') === 'pendiente';
+    return `<li class="mitem" data-id="${m.id}">
+      <div class="mi-ic ${inc?'in':'out'}">${inc?'↑':'↓'}</div>
+      <div class="mi-main">
+        <div class="mi-title">${esc(m.descripcion || m.categoria)}</div>
+        <div class="mi-meta">${meta}${meta ? ' · ' : ''}${fch}</div>
+      </div>
+      <div class="mi-right">
+        <div class="mi-amt ${inc?'in':'out'}">${inc?'+':'−'}${fmt(m.monto)}</div>
+        ${pend ? '<span class="pill pendiente">Pendiente</span>' : ''}
+      </div>
+    </li>`;
+  }).join('')}</ul>`;
 }
 
 function renderFlujo() {
@@ -237,7 +239,7 @@ function emptyHTML(msg) {
 }
 
 function wireRows() {
-  content.querySelectorAll('tr[data-id]').forEach(tr => tr.addEventListener('click', () => openModal(state.movimientos.find(m => m.id === tr.dataset.id))));
+  content.querySelectorAll('[data-id]').forEach(el => el.addEventListener('click', () => openModal(state.movimientos.find(m => m.id === el.dataset.id))));
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
@@ -297,9 +299,10 @@ $('#deleteBtn').addEventListener('click', async () => {
 });
 
 // ── Navegación / eventos globales ──────────────────────────────────────────────
-function go(view) { state.view = view; render(); $('#sidebar').classList.remove('open'); }
-document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
+function go(view) { state.view = view; render(); window.scrollTo({ top: 0 }); }
+document.querySelectorAll('.nav-item, .bn-item').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
 $('#newBtn').addEventListener('click', () => openModal(null));
+$('#fab').addEventListener('click', () => openModal(null));
 $('#modalClose').addEventListener('click', closeModal);
 $('#cancelBtn').addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
@@ -308,7 +311,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hid
 $('#prevMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() - 1, 1); render(); });
 $('#nextMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() + 1, 1); render(); });
 $('#todayBtn').addEventListener('click', () => { state.ref = new Date(); render(); });
-$('#menuBtn').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
 $('#exportBtn').addEventListener('click', exportCSV);
 
 let toastT;
@@ -341,6 +343,9 @@ if ('serviceWorker' in navigator) window.addEventListener('load', () => navigato
   if (backend) {
     $('#syncState').classList.add('cloud');
     $('#syncLabel').textContent = 'Nube (Firebase)';
+    const chip = $('#syncChip');
+    chip.classList.add('cloud');
+    chip.innerHTML = '<span class="dot"></span>Nube';
   } else {
     backend = LocalBackend;
   }

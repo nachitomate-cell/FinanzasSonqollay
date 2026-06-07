@@ -1,5 +1,5 @@
 // Service worker — cache de shell para offline.
-const CACHE = 'finanzas-sonqollay-v1';
+const CACHE = 'finanzas-sonqollay-v2';
 const ASSETS = [
   './',
   './index.html',

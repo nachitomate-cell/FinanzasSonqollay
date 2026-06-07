@@ -149,6 +149,33 @@ td.amount.out { color: var(--expense); }
 .empty { text-align: center; color: var(--muted); padding: 48px 20px; }
 .empty .big { font-size: 34px; opacity: .4; }
 
+/* ── Lista de movimientos (tarjetas, responsive) ── */
+.mlist { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; box-shadow: var(--shadow); overflow: hidden; }
+.mitem { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid #eef1f5; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .12s; }
+.mitem:last-child { border-bottom: 0; }
+.mitem:hover { background: #f9fafc; }
+.mitem:active { background: #f1f4f8; }
+.mi-ic { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; font-size: 17px; font-weight: 700; }
+.mi-ic.in { background: var(--income-bg); color: var(--income); }
+.mi-ic.out { background: var(--expense-bg); color: var(--expense); }
+.mi-main { flex: 1; min-width: 0; }
+.mi-title { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mi-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mi-right { flex: 0 0 auto; text-align: right; }
+.mi-amt { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; font-size: 14.5px; }
+.mi-amt.in { color: var(--income); }
+.mi-amt.out { color: var(--expense); }
+.mi-right .pill { margin-top: 4px; }
+
+/* ── Navegación inferior + FAB (sólo móvil; ocultos por defecto) ── */
+.bottom-nav, .fab { display: none; }
+.sync-chip { display: none; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 600;
+  background: #eef1f5; padding: 6px 10px; border-radius: 999px; }
+.sync-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+.sync-chip.cloud { background: var(--income-bg); color: var(--income); }
+.sync-chip.cloud .dot { background: var(--income); }
+.topbar-logo { width: 34px; height: 34px; object-fit: contain; background: #fff; border-radius: 9px; padding: 3px; border: 1px solid var(--line); }
+
 /* ── Barras flujo / categorías ── */
 .bar-row { display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 12px; padding: 7px 0; font-size: 13px; }
 .bar-track { background: #eef1f5; border-radius: 8px; height: 22px; position: relative; overflow: hidden; display: flex; }
@@ -201,14 +228,75 @@ td.amount.out { color: var(--expense); }
   font-size: 13.5px; z-index: 80; box-shadow: 0 10px 30px rgba(0,0,0,.25);
 }
 
-/* ── Responsive ── */
+/* ── Responsive / mobile-first (el cliente usa el teléfono ~80%) ── */
 @media (max-width: 820px) {
-  .sidebar { position: fixed; left: 0; top: 0; z-index: 60; transform: translateX(-100%); transition: transform .25s; }
-  .sidebar.open { transform: translateX(0); }
+  /* La sidebar desaparece: navegación por barra inferior */
+  .sidebar { display: none; }
   .only-mobile { display: inline-flex; }
-  .kpis { grid-template-columns: repeat(2, 1fr); }
-  .topbar { padding: 10px 14px; }
-  .content { padding: 16px 14px; }
-  .topbar-actions .btn-primary { padding: 9px 12px; }
+  .sync-chip { display: inline-flex; }
+
+  /* Topbar compacto con safe-area (notch) */
+  .topbar { padding: calc(8px + env(safe-area-inset-top)) 12px 8px; gap: 8px; }
+  .period { flex: 1; justify-content: center; }
+  .period h1 { min-width: 0; font-size: 16px; }
+  #todayBtn { display: none; }
+  .topbar-actions .btn-primary { display: none; }   /* se reemplaza por el FAB */
+  .topbar-actions { gap: 6px; }
+
+  /* Contenido: deja espacio para la barra inferior */
+  .content { padding: 14px 12px calc(80px + env(safe-area-inset-bottom)); }
+  .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi { padding: 13px 14px; }
+  .kpi .value { font-size: 21px; }
   .grid2 { grid-template-columns: 1fr; }
+  .card { padding: 15px; }
+  .icon-btn { width: 40px; height: 40px; }
+
+  /* Filtros apilados y cómodos */
+  .toolbar select { flex: 1; }
+
+  /* Flujo: barras más legibles en pantalla angosta */
+  .bar-row { grid-template-columns: 56px 1fr; row-gap: 2px; }
+  .bar-row .amt { grid-column: 2; text-align: left; min-width: 0; }
+
+  /* Navegación inferior fija */
+  .bottom-nav {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: rgba(255,255,255,.97); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bn-item {
+    background: none; border: 0; color: var(--muted); font-weight: 600; font-size: 11px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 9px 4px 8px; -webkit-tap-highlight-color: transparent;
+  }
+  .bn-item span { font-size: 20px; line-height: 1; }
+  .bn-item.active { color: var(--brand); }
+
+  /* Botón flotante */
+  .fab {
+    display: grid; place-items: center; position: fixed; right: 16px;
+    bottom: calc(64px + env(safe-area-inset-bottom) + 14px);
+    width: 56px; height: 56px; border-radius: 50%; border: 0;
+    background: var(--brand); color: #fff; font-size: 30px; line-height: 1;
+    box-shadow: 0 8px 22px rgba(247,112,0,.45); z-index: 45;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .fab:active { background: var(--brand-dark); transform: scale(.95); }
+
+  /* Modal como hoja inferior (bottom sheet) */
+  .modal-backdrop { align-items: flex-end; padding: 0; }
+  .modal { max-width: none; width: 100%; margin: 0; border-radius: 18px 18px 0 0; max-height: 94dvh; overflow-y: auto; }
+  .modal-foot { position: sticky; bottom: 0; background: #fff; padding-bottom: calc(2px + env(safe-area-inset-bottom)); }
+  .seg-opt, .btn-primary, .btn-ghost { min-height: 46px; }
+
+  /* 16px evita el auto-zoom de iOS al enfocar inputs */
+  .field input, .field select, .toolbar input, .toolbar select { font-size: 16px; }
+}
+
+@media (max-width: 380px) {
+  .kpis { grid-template-columns: 1fr; }
+  #exportBtn { padding: 8px 10px; }
 }
