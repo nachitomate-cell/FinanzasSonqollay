@@ -1,6 +1,9 @@
 node_modules/
 dev-server.mjs
 firebase-config-compat.js
+# Claves secretas de Firebase (Admin SDK) — NUNCA subir
+*firebase-adminsdk*.json
+serviceAccount*.json
 .firebase/
 *.log
 .DS_Store

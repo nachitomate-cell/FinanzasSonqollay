@@ -262,6 +262,22 @@ function render() {
   ({ dashboard: renderDashboard, movimientos: renderMovimientos, flujo: renderFlujo, categorias: renderCategorias }[state.view])();
 }
 
+const BELL_SVG = '<svg class="ic" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+function showNotifBanner() {
+  return ('Notification' in window) && Notification.permission !== 'granted'
+    && localStorage.getItem('finanzas_notif') !== '1'
+    && localStorage.getItem('finanzas_notif_dismissed') !== '1';
+}
+function notifBannerHTML() {
+  if (!showNotifBanner()) return '';
+  return `<div class="notif-banner" id="notifBanner">
+    <div class="nb-ic">${BELL_SVG}</div>
+    <div class="nb-text"><b>Activá las notificaciones</b><span>No pierdas ni una cobranza: te avisamos de cobros y pagos por vencer, el resumen semanal y el recordatorio del F29.</span></div>
+    <button class="nb-cta" id="nbActivate">Activar</button>
+    <button class="nb-close" id="nbClose" aria-label="Ahora no">✕</button>
+  </div>`;
+}
+
 function renderDashboard() {
   const movs = monthMovs();
   const t = monthTotals(movs);
@@ -271,6 +287,7 @@ function renderDashboard() {
   const ag = aging('ingreso'); const agTot = ag.vig + ag.d30 + ag.d60 + ag.d90;
 
   content.innerHTML = `
+    ${notifBannerHTML()}
     <div class="hero">
       <div class="h-label">Balance de ${MESES[state.ref.getMonth()]}</div>
       <div class="h-bal">${fmt(t.balance)}</div>
@@ -336,6 +353,8 @@ function renderDashboard() {
       ${recientes.length ? itemsHTML(recientes) : emptyHTML('Sin movimientos este mes')}
     </div>`;
 
+  $('#nbActivate')?.addEventListener('click', async () => { await enableReminders(); render(); });
+  $('#nbClose')?.addEventListener('click', () => { localStorage.setItem('finanzas_notif_dismissed', '1'); render(); });
   $('#goMovs')?.addEventListener('click', () => go('movimientos'));
   $('#goCtas')?.addEventListener('click', openCta);
   $('#ticker')?.addEventListener('click', () => { toast('Actualizando indicadores…'); loadIndicadores(); });
