@@ -1,5 +1,5 @@
 // Service worker — cache de shell para offline.
-const CACHE = 'finanzas-sonqollay-v17';
+const CACHE = 'finanzas-sonqollay-v18';
 const ASSETS = [
   './',
   './index.html',
@@ -22,12 +22,17 @@ self.addEventListener('install', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
+  e.waitUntil((async () => {
+    const keys = await caches.keys();
+    const old = keys.filter(k => k !== CACHE);
+    await Promise.all(old.map(k => caches.delete(k)));
+    // Si había cachés viejos, hubo una actualización → avisar a las pestañas
+    if (old.length) {
+      const clients = await self.clients.matchAll({ type: 'window' });
+      clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' }));
+    }
+    await self.clients.claim();
+  })());
 });
 
 // Clic en una notificación local → enfocar/abrir la app

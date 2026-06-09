@@ -25,6 +25,8 @@
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* Nunca permitir scroll horizontal de la página (clip no rompe sticky ni el scroll vertical) */
+html, body { overflow-x: clip; max-width: 100%; }
 /* Mobile-first: sin doble-tap zoom, sin rebote/pull-to-refresh */
 body { touch-action: manipulation; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 
@@ -485,6 +487,17 @@ td.amount.out { color: var(--expense); }
   .notif-banner { flex-wrap: wrap; }
   .nb-cta { width: 100%; }
 }
+
+/* ── Aviso de nueva versión ── */
+.update-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 70;
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--brand); color: #fff; font-size: 14px; font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,.22); animation: rise .3s ease; }
+.update-banner.hidden { display: none; }
+.update-banner button { background: #fff; color: var(--brand-dark); border: 0; border-radius: 9px;
+  padding: 8px 16px; font-weight: 700; font-size: 13.5px; }
+.update-banner button:active { transform: scale(.95); }
 
 /* ── Tutorial guiado (coachmarks) ── */
 .tour { position: fixed; inset: 0; z-index: 95; }

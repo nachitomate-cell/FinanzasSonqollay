@@ -443,7 +443,7 @@ function renderFlujo() {
   const totIn = rows.reduce((a, r) => a + r.tIn, 0), totOut = rows.reduce((a, r) => a + r.tOut, 0);
 
   content.innerHTML = `
-    <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpis dash3">
       <div class="kpi income"><div class="label"><span class="tag"></span>Ingresos ${y}</div><div class="value">${fmt(totIn)}</div></div>
       <div class="kpi expense"><div class="label"><span class="tag"></span>Egresos ${y}</div><div class="value">${fmt(totOut)}</div></div>
       <div class="kpi balance"><div class="label"><span class="tag"></span>Balance ${y}</div><div class="value" style="color:${totIn-totOut>=0?'var(--income)':'var(--expense)'}">${fmt(totIn-totOut)}</div></div>
@@ -763,11 +763,7 @@ $('#prevMonth').addEventListener('click', () => { state.ref = new Date(state.ref
 $('#nextMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() + 1, 1); render(); });
 $('#todayBtn').addEventListener('click', () => { state.ref = new Date(); render(); });
 
-// Menú exportar
-const exportMenu = $('#exportMenu');
-$('#exportBtn').addEventListener('click', (e) => { e.stopPropagation(); exportMenu.hidden = !exportMenu.hidden; });
-document.addEventListener('click', () => exportMenu.hidden = true);
-exportMenu.addEventListener('click', e => { const t = e.target.dataset.exp; if (t) { exportMenu.hidden = true; doExport(t); } });
+// La exportación vive ahora dentro de Ajustes (ver renderCfg).
 
 let toastT;
 function toast(msg) { const el = $('#toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 2600); }
@@ -886,7 +882,24 @@ function notifyDue(force = false) {
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; $('#installBtn').hidden = false; });
 $('#installBtn').addEventListener('click', async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; $('#installBtn').hidden = true; });
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+function showUpdateBanner() { $('#updateBanner')?.classList.remove('hidden'); }
+$('#updateReload').addEventListener('click', () => location.reload());
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      const hadController = !!navigator.serviceWorker.controller; // false en la 1ª carga
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        nw && nw.addEventListener('statechange', () => {
+          if (nw.state === 'activated' && hadController) showUpdateBanner();
+        });
+      });
+    }).catch(() => {});
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'SW_UPDATED') showUpdateBanner();
+    });
+  });
+}
 
 // ── Registro rápido (2 toques) ────────────────────────────────────────────────
 const quickModal = $('#quickModal');
@@ -936,6 +949,12 @@ function renderCfg() {
       <div class="cfg-row"><div class="cfg-txt"><b>Cómo usar la app</b><span>Tutorial guiado paso a paso</span></div><button class="btn-ghost sm" id="cfgTour">Ver tutorial</button></div>
     </div>
     <div class="cfg-section">
+      <h4>Exportar</h4>
+      <div class="cfg-row"><div class="cfg-txt"><b>Descargar el período</b><span>Movimientos del mes/alcance en foco</span></div>
+        <div style="display:flex;gap:6px"><button class="btn-ghost sm" data-exp="csv">CSV</button><button class="btn-ghost sm" data-exp="xlsx">Excel</button><button class="btn-ghost sm" data-exp="pdf">PDF</button></div>
+      </div>
+    </div>
+    <div class="cfg-section">
       <h4>Apariencia</h4>
       ${sw('cfgDark', isDark(), 'Modo oscuro', 'Tema oscuro para toda la app')}
     </div>
@@ -966,6 +985,7 @@ function renderCfg() {
     </div>`;
 
   $('#cfgTour').addEventListener('click', () => { cfgModal.hidden = true; startTour(); });
+  $('#cfgBody').querySelectorAll('[data-exp]').forEach(b => b.addEventListener('click', () => { cfgModal.hidden = true; doExport(b.dataset.exp); }));
   $('#cfgDark').addEventListener('change', e => setTheme(e.target.checked));
   $('#cfgCta').addEventListener('click', openCta);
   $('#cfgEnableNotif').addEventListener('click', enableReminders);
