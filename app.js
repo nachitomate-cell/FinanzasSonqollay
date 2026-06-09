@@ -272,7 +272,7 @@ function notifBannerHTML() {
   if (!showNotifBanner()) return '';
   return `<div class="notif-banner" id="notifBanner">
     <div class="nb-ic">${BELL_SVG}</div>
-    <div class="nb-text"><b>Activá las notificaciones</b><span>No pierdas ni una cobranza: te avisamos de cobros y pagos por vencer, el resumen semanal y el recordatorio del F29.</span></div>
+    <div class="nb-text"><b>Activa las notificaciones</b><span>No pierdas ni una cobranza: te avisamos de cobros y pagos por vencer, el resumen semanal y el recordatorio del F29.</span></div>
     <button class="nb-cta" id="nbActivate">Activar</button>
     <button class="nb-close" id="nbClose" aria-label="Ahora no">✕</button>
   </div>`;
@@ -311,7 +311,7 @@ function renderDashboard() {
           <div class="acct-dot" style="background:${esc(c.color || '#586878')}">${CTA_ICON[c.tipo] || CTA_ICON.otro}</div>
           <div class="acct-name">${esc(c.nombre)}<span>${esc(c.tipo)}</span></div>
           <div class="acct-bal" style="color:${accountBalance(c.id) >= 0 ? 'var(--ink)' : 'var(--expense)'}">${fmt(accountBalance(c.id))}</div>
-        </div>`).join('') + `<div class="acct-total"><span>Total disponible</span><b>${fmt(totalSaldo())}</b></div>` : '<p class="sub" style="color:var(--muted);padding:6px 0">Sin cuentas. Tocá "Gestionar" para crear una.</p>'}
+        </div>`).join('') + `<div class="acct-total"><span>Total disponible</span><b>${fmt(totalSaldo())}</b></div>` : '<p class="sub" style="color:var(--muted);padding:6px 0">Sin cuentas. Toca "Gestionar" para crear una.</p>'}
     </div>
 
     <div class="card">
@@ -588,7 +588,7 @@ function updateConvHint() {
   if (cur === 'CLP') { hint.hidden = true; return; }
   const r = rate(cur), val = Number($('#f_monto').value || 0);
   hint.hidden = false;
-  if (!r) { hint.innerHTML = '⚠ Sin valor de cambio disponible. Conectate para traer USD/UF.'; return; }
+  if (!r) { hint.innerHTML = '⚠ Sin valor de cambio disponible. Conéctate para traer USD/UF.'; return; }
   const fch = ddmm(cur === 'UF' ? indic.fechaUf : indic.fechaDolar);
   hint.innerHTML = `≈ <b>${fmt(val * r)} CLP</b> &nbsp;·&nbsp; TC ${cur} ${fmtFX(r)}${fch ? ' (' + fch + ')' : ''}`;
 }
@@ -656,7 +656,7 @@ $('#movForm').addEventListener('submit', async (e) => {
   const moneda = $('#f_moneda').value;
   const montoOrig = Number($('#f_monto').value || 0);
   const r = rate(moneda);
-  if (moneda !== 'CLP' && !r) return toast('No hay tipo de cambio disponible. Conectate para traer USD/UF.');
+  if (moneda !== 'CLP' && !r) return toast('No hay tipo de cambio disponible. Conéctate para traer USD/UF.');
   const obj = {
     tipo: document.querySelector('input[name="tipo"]:checked').value,
     fecha: $('#f_fecha').value,
@@ -714,7 +714,7 @@ function renderCatModal() {
         <button class="icon-btn" data-act="bud" title="Presupuesto mensual">💰</button>
         <button class="icon-btn" data-act="hide" title="${c.oculta?'Mostrar':'Ocultar'}">${c.oculta?'🙈':'👁'}</button>
         <button class="icon-btn" data-act="del" title="Eliminar">🗑</button>
-      </li>`).join('') || '<p class="sub" style="color:var(--muted);padding:8px 0">Sin categorías. Agregá una arriba.</p>'}
+      </li>`).join('') || '<p class="sub" style="color:var(--muted);padding:8px 0">Sin categorías. Agrega una arriba.</p>'}
     </ul>`;
 
   document.querySelectorAll('input[name="catTipo"]').forEach(r => r.addEventListener('change', e => { catMgrTipo = e.target.value; renderCatModal(); }));
@@ -912,7 +912,7 @@ $('#keypad').addEventListener('click', e => {
 document.querySelectorAll('input[name="qtipo"]').forEach(r => r.addEventListener('change', e => { quickTipo = e.target.value; quickCat = null; renderQuickChips(); }));
 $('#quickSave').addEventListener('click', async () => {
   const monto = Number(quickAmt || 0);
-  if (!monto) return toast('Ingresá un monto');
+  if (!monto) return toast('Ingresa un monto');
   await movStore.add({ tipo: quickTipo, fecha: todayStr(), moneda: 'CLP', montoOrig: monto, tc: 1, monto, categoria: quickCat, descripcion: '', contraparte: '', documento: '', medio: 'Transferencia', cuenta: defaultCuenta(), estado: 'pagado', iva: true, vence: '', comprobante: '' });
   quickModal.hidden = true; toast('Guardado');
 });
@@ -950,7 +950,7 @@ function renderCfg() {
     </div>
     <div class="cfg-section">
       <h4>Notificaciones</h4>
-      <div class="cfg-row"><div class="cfg-txt"><b>Permiso de notificaciones</b><span>${('Notification' in window) && Notification.permission==='granted' ? 'Activado' : 'Tocá para activar'}</span></div><button class="btn-ghost sm" id="cfgEnableNotif">Activar</button></div>
+      <div class="cfg-row"><div class="cfg-txt"><b>Permiso de notificaciones</b><span>${('Notification' in window) && Notification.permission==='granted' ? 'Activado' : 'Toca para activar'}</span></div><button class="btn-ghost sm" id="cfgEnableNotif">Activar</button></div>
       ${sw('cfgDue', prefs.nDue, 'Cobros / pagos vencidos', 'Avisa de pendientes por vencer')}
       ${sw('cfgWeekly', prefs.nWeekly, 'Resumen semanal', 'Cada lunes, balance de la semana')}
       ${sw('cfgF29', prefs.nF29, 'Recordatorio F29 / IVA', 'Día 12, con el IVA estimado')}
@@ -1018,7 +1018,7 @@ function renderRec() {
   }));
   $('#rAdd').addEventListener('click', async () => {
     const tipo = document.querySelector('input[name="rtipo"]:checked').value;
-    const monto = Number($('#rMonto').value || 0); if (!monto) return toast('Ingresá un monto');
+    const monto = Number($('#rMonto').value || 0); if (!monto) return toast('Ingresa un monto');
     await recStore.add({ tipo, descripcion: $('#rDesc').value.trim(), monto, dia: Math.min(28, Math.max(1, Number($('#rDia').value || 1))), categoria: $('#rCat').value, moneda: 'CLP', activo: true });
     toast('Recurrente agregado');
   });
@@ -1059,7 +1059,7 @@ function renderCtaModal() {
         <button class="icon-btn" data-act="del" title="Eliminar">🗑</button>
       </div>`).join('') : '<p class="sub" style="color:var(--muted);padding:6px 0">Sin cuentas todavía.</p>'}`;
   $('#addCtaBtn').addEventListener('click', async () => {
-    const nombre = $('#newCtaName').value.trim(); if (!nombre) return toast('Ponle un nombre');
+    const nombre = $('#newCtaName').value.trim(); if (!nombre) return toast('Escribe un nombre');
     await ctaStore.add({ nombre, tipo: $('#newCtaTipo').value, saldoInicial: Number($('#newCtaSaldo').value || 0), color: $('#newCtaColor').value });
     toast('Cuenta agregada');
   });
@@ -1113,13 +1113,13 @@ async function pinPush(d) {
   if (pinStep === 'unlock') {
     if (await sha(val) === LOCK.pin()) hideLock(); else { setTimeout(() => { paintDots(true); $('#lockTitle').textContent = 'PIN incorrecto'; }, 80); }
   } else if (pinStep === 'set') {
-    pinTemp = val; pinStep = 'confirm'; $('#lockTitle').textContent = 'Repetí el PIN'; setTimeout(paintDots, 60);
+    pinTemp = val; pinStep = 'confirm'; $('#lockTitle').textContent = 'Repite el PIN'; setTimeout(paintDots, 60);
   } else if (pinStep === 'confirm') {
     if (val === pinTemp) { localStorage.setItem('finanzas_pinhash', await sha(val)); localStorage.setItem('finanzas_lock', '1'); lockScreen.hidden = true; pinCb && pinCb(true); pinCb = null; }
-    else { pinStep = 'set'; $('#lockTitle').textContent = 'No coincide, creá el PIN'; setTimeout(() => paintDots(true), 60); }
+    else { pinStep = 'set'; $('#lockTitle').textContent = 'No coincide, crea el PIN'; setTimeout(() => paintDots(true), 60); }
   }
 }
-function showLock(step) { pinStep = step; pinBuf = ''; pinTemp = ''; $('#lockTitle').textContent = step === 'set' ? 'Creá un PIN (4 dígitos)' : 'Ingresá tu PIN'; $('#lockTitle').classList.remove('err'); paintDots(); $('#bioBtn').hidden = !(step === 'unlock' && LOCK.bio()); lockScreen.hidden = false; }
+function showLock(step) { pinStep = step; pinBuf = ''; pinTemp = ''; $('#lockTitle').textContent = step === 'set' ? 'Crea un PIN (4 dígitos)' : 'Ingresa tu PIN'; $('#lockTitle').classList.remove('err'); paintDots(); $('#bioBtn').hidden = !(step === 'unlock' && LOCK.bio()); lockScreen.hidden = false; }
 function hideLock() { lockScreen.hidden = true; }
 function setPin() { return new Promise(res => { pinCb = res; showLock('set'); }); }
 function maybeLock() { if (LOCK.enabled() && LOCK.pin()) showLock('unlock'); }
@@ -1213,16 +1213,16 @@ function notifyAll(force) {
 
 // ── Tutorial guiado (paso a paso, navegando la app) ─────────────────────────────
 const TOUR = [
-  { center: true, view: 'dashboard', title: '¡Bienvenido! 👋', text: 'Te muestro cómo usar Finanzas Sonqollay en menos de un minuto. Podés saltarlo cuando quieras.' },
-  { sel: '.hero', view: 'dashboard', title: 'Tu balance del mes', text: 'Acá ves el balance, ingresos y egresos del mes, con su equivalente en dólares y UF en vivo.' },
-  { sel: '.acct-row, .acct-total', view: 'dashboard', title: 'Cuentas y saldo', text: 'El saldo disponible de tus cuentas (banco, efectivo, tarjeta). Las gestionás desde Ajustes.' },
-  { sel: '#fab, #newBtn', view: 'dashboard', title: 'Registrar un movimiento', text: 'Tocá el botón “+” para anotar un gasto o ingreso en segundos con el teclado rápido.' },
-  { sel: '[data-view="movimientos"]', view: 'movimientos', title: 'Movimientos', text: 'Acá ves, buscás y filtrás todo. En el teléfono, deslizá una tarjeta para marcarla pagada o eliminarla.' },
+  { center: true, view: 'dashboard', title: '¡Bienvenido! 👋', text: 'Te muestro cómo usar Finanzas Sonqollay en menos de un minuto. Puedes saltarlo cuando quieras.' },
+  { sel: '.hero', view: 'dashboard', title: 'Tu balance del mes', text: 'Aquí ves el balance, ingresos y egresos del mes, con su equivalente en dólares y UF en vivo.' },
+  { sel: '.acct-row, .acct-total', view: 'dashboard', title: 'Cuentas y saldo', text: 'El saldo disponible de tus cuentas (banco, efectivo, tarjeta). Las gestionas desde Ajustes.' },
+  { sel: '#fab, #newBtn', view: 'dashboard', title: 'Registrar un movimiento', text: 'Toca el botón “+” para anotar un gasto o ingreso en segundos con el teclado rápido.' },
+  { sel: '[data-view="movimientos"]', view: 'movimientos', title: 'Movimientos', text: 'Aquí ves, buscas y filtras todo. En el teléfono, desliza una tarjeta para marcarla pagada o eliminarla.' },
   { sel: '[data-view="flujo"]', view: 'flujo', title: 'Flujo de caja', text: 'La tendencia de tu balance y el flujo mes a mes de todo el año.' },
   { sel: '[data-view="categorias"]', view: 'categorias', title: 'Análisis', text: 'Gastos e ingresos por categoría, estado de resultados (vs. mes anterior) y tus presupuestos.' },
   { sel: '#cfgBtn', view: 'dashboard', title: 'Ajustes', text: 'Cuentas, movimientos recurrentes, modo oscuro, bloqueo con PIN/huella y notificaciones.' },
-  { sel: '#bellBtn', view: 'dashboard', title: 'Notificaciones', text: 'Activá los avisos para no perder cobranzas: vencimientos, resumen semanal y recordatorio del F29.' },
-  { center: true, view: 'dashboard', title: '¡Listo! 🎉', text: 'Eso es lo básico. Podés repetir este tutorial cuando quieras desde Ajustes → Ayuda.' },
+  { sel: '#bellBtn', view: 'dashboard', title: 'Notificaciones', text: 'Activa los avisos para no perder cobranzas: vencimientos, resumen semanal y recordatorio del F29.' },
+  { center: true, view: 'dashboard', title: '¡Listo! 🎉', text: 'Eso es lo básico. Puedes repetir este tutorial cuando quieras desde Ajustes → Ayuda.' },
 ];
 let tourIdx = 0;
 const visibleEl = (sel) => { const els = [...document.querySelectorAll(sel)]; return els.find(e => e.offsetParent !== null && e.getBoundingClientRect().width > 0) || null; };

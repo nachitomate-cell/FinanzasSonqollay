@@ -14,6 +14,6 @@ export const firebaseConfig = {
 
 // Clave VAPID (Web Push) para recordatorios push. Firebase Console →
 // Configuración del proyecto → Cloud Messaging → "Certificados push web" →
-// copiar el par de claves y pegarlo acá. Si queda vacío, se usan
+// copiar el par de claves y pegarlo aquí. Si queda vacío, se usan
 // notificaciones locales del navegador (no push con la app cerrada).
 export const VAPID_KEY = "BAm2dZPmS0xdBaLvgkK3Wl4l0GukAFM03h3Ka47gxE_ehUud9UmqDSRqq2jUBUBphZ_1T2Vt8IAPuzxkxRwhA-g";

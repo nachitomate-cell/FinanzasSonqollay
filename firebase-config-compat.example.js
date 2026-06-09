@@ -1,5 +1,5 @@
 /* Config para el service worker de FCM (firebase-messaging-sw.js).
-   Copiá este archivo como firebase-config-compat.js con los MISMOS valores
+   Copia este archivo como firebase-config-compat.js con los MISMOS valores
    que firebase-config.js. (firebase-config-compat.js está en .gitignore.) */
 self.firebaseConfig = {
   apiKey: "TU_API_KEY",

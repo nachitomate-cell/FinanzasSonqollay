@@ -1,10 +1,10 @@
 // ── Configuración de Firebase (OPCIONAL) ───────────────────────────────────
 // La app funciona en "Modo local" (localStorage) sin tocar esto.
 // Para sincronizar en la nube:
-//   1. Copiá este archivo como  firebase-config.js
-//   2. Pegá los valores de tu proyecto (Firebase Console → Configuración → Tus apps → Web)
+//   1. Copia este archivo como  firebase-config.js
+//   2. Pega los valores de tu proyecto (Firebase Console → Configuración → Tus apps → Web)
 //   3. Habilitá Authentication → método "Anónimo"
-//   4. Creá Firestore Database y publicá las reglas de  firestore.rules
+//   4. Crea Firestore Database y publica las reglas de  firestore.rules
 //
 // firebase-config.js está en .gitignore (no se sube al repo).
 
@@ -19,5 +19,5 @@ export const firebaseConfig = {
 
 // Solo si vas a usar recordatorios push (FCM):
 // Firebase Console → Cloud Messaging → Web Push certificates → Key pair.
-// Si la dejás vacía, los recordatorios usan notificaciones locales del navegador.
+// Si la dejas vacía, los recordatorios usan notificaciones locales del navegador.
 export const VAPID_KEY = "";

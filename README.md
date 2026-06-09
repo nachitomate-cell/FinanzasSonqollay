@@ -16,7 +16,7 @@ Parte del ecosistema Sonqollay junto a *Aura BIM* (`dbsonqollay`) y *SonqollayAP
   marca de **afecto a IVA (19%)**.
 - **Comprobantes con cámara**: adjuntá la foto de la boleta/factura al
   movimiento (se comprime en el dispositivo). Para uso en terreno: registrás el
-  gasto y le sacás la foto en el momento. Indicador 📎 en la lista y visor a
+  gasto y le tomas la foto en el momento. Indicador 📎 en la lista y visor a
   pantalla completa.
 - **Recordatorios de cobros/pagos**: tablero de pendientes vencidos / por vencer
   y **notificaciones** (locales en el navegador, o **push FCM** en Modo nube).
@@ -30,7 +30,7 @@ Parte del ecosistema Sonqollay junto a *Aura BIM* (`dbsonqollay`) y *SonqollayAP
   todo el historial / **rango de fechas** personalizado).
 - **Multimoneda en vivo (Dólar / UF)**: ticker con el **dólar observado** y la
   **UF** del día (fuente [mindicador.cl](https://mindicador.cl), valores
-  oficiales que se publican una vez al día; se cachean para uso offline). Podés
+  oficiales que se publican una vez al día; se cachean para uso offline). Puedes
   cargar un movimiento en **USD** o **UF** y se **convierte y guarda en CLP**
   automáticamente (se conserva la moneda, el monto original y el tipo de cambio
   usado). Los KPIs muestran su equivalente en USD/UF.
@@ -73,7 +73,7 @@ python -m http.server 8080
 ```
 
 > Abrir el `index.html` con `file://` no registra el service worker ni el
-> import dinámico; usá un servidor local.
+> import dinámico; usa un servidor local.
 
 ## Activar sincronización en la nube (opcional)
 
@@ -87,7 +87,7 @@ python -m http.server 8080
 ## Deploy (Firebase Hosting)
 
 `firebase.json` y `.firebaserc` ya vienen configurados (proyecto
-`finanzas-sonqollay`, ajustá el nombre si usás otro).
+`finanzas-sonqollay`, ajusta el nombre si usas otro).
 
 ```bash
 npm i -g firebase-tools
