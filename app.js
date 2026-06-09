@@ -401,9 +401,9 @@ function renderMovimientos() {
   const s = $('#search');
   s.addEventListener('input', () => { state.search = s.value; const p = s.selectionStart; renderMovimientos(); const ns = $('#search'); ns.focus(); ns.setSelectionRange(p, p); });
   $('#fScope').value = state.scope; $('#fTipo').value = state.filterTipo; $('#fEstado').value = state.filterEstado;
-  $('#fScope').addEventListener('change', e => { state.scope = e.target.value; renderMovimientos(); });
-  $('#fTipo').addEventListener('change', e => { state.filterTipo = e.target.value; renderMovimientos(); });
-  $('#fEstado').addEventListener('change', e => { state.filterEstado = e.target.value; renderMovimientos(); });
+  $('#fScope')?.addEventListener('change', e => { state.scope = e.target.value; renderMovimientos(); });
+  $('#fTipo')?.addEventListener('change', e => { state.filterTipo = e.target.value; renderMovimientos(); });
+  $('#fEstado')?.addEventListener('change', e => { state.filterEstado = e.target.value; renderMovimientos(); });
   $('#fDesde')?.addEventListener('change', e => { state.desde = e.target.value; renderMovimientos(); });
   $('#fHasta')?.addEventListener('change', e => { state.hasta = e.target.value; renderMovimientos(); });
   wireRows();
@@ -470,8 +470,8 @@ function renderFlujo() {
         </div>`).join('')}
     </div>`;
 
-  $('#prevYear').addEventListener('click', () => { state.ref = new Date(y - 1, state.ref.getMonth(), 1); render(); });
-  $('#nextYear').addEventListener('click', () => { state.ref = new Date(y + 1, state.ref.getMonth(), 1); render(); });
+  $('#prevYear')?.addEventListener('click', () => { state.ref = new Date(y - 1, state.ref.getMonth(), 1); render(); });
+  $('#nextYear')?.addEventListener('click', () => { state.ref = new Date(y + 1, state.ref.getMonth(), 1); render(); });
 }
 
 function renderCategorias() {
@@ -521,7 +521,7 @@ function renderCategorias() {
     ${budCard}
     ${block('Ingresos por categoría', ing)}
     ${block('Egresos por categoría', egr)}`;
-  $('#mgrCatBtn').addEventListener('click', openCatModal);
+  $('#mgrCatBtn')?.addEventListener('click', openCatModal);
 }
 
 function emptyHTML(msg) {
@@ -624,13 +624,13 @@ function openModal(mov) {
 function closeModal() { modal.hidden = true; }
 
 document.querySelectorAll('input[name="tipo"]').forEach(r => r.addEventListener('change', e => fillCategorias(e.target.value)));
-$('#f_estado').addEventListener('change', toggleVence);
-$('#f_moneda').addEventListener('change', () => { updateMontoCur(); updateConvHint(); });
-$('#f_monto').addEventListener('input', updateConvHint);
-$('#attachBtn').addEventListener('click', () => $('#f_file').click());
-$('#attachRemove').addEventListener('click', () => { $('#f_file').value = ''; setComprobante(null); });
-$('#attachImg').addEventListener('click', () => openImg(currentComprobante));
-$('#f_file').addEventListener('change', async (e) => {
+$('#f_estado')?.addEventListener('change', toggleVence);
+$('#f_moneda')?.addEventListener('change', () => { updateMontoCur(); updateConvHint(); });
+$('#f_monto')?.addEventListener('input', updateConvHint);
+$('#attachBtn')?.addEventListener('click', () => $('#f_file').click());
+$('#attachRemove')?.addEventListener('click', () => { $('#f_file').value = ''; setComprobante(null); });
+$('#attachImg')?.addEventListener('click', () => openImg(currentComprobante));
+$('#f_file')?.addEventListener('change', async (e) => {
   const file = e.target.files[0]; if (!file) return;
   try { setComprobante(await compressImage(file)); } catch { toast('No se pudo procesar la imagen'); }
 });
@@ -650,7 +650,7 @@ function compressImage(file, maxDim = 1200, quality = 0.6) {
   });
 }
 
-$('#movForm').addEventListener('submit', async (e) => {
+$('#movForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const estado = $('#f_estado').value;
   const moneda = $('#f_moneda').value;
@@ -681,15 +681,15 @@ $('#movForm').addEventListener('submit', async (e) => {
     closeModal(); toast(id ? 'Movimiento actualizado' : 'Movimiento guardado');
   } catch (err) { toast('Error al guardar: ' + err.message); }
 });
-$('#deleteBtn').addEventListener('click', async () => {
+$('#deleteBtn')?.addEventListener('click', async () => {
   const id = $('#f_id').value;
   if (id && confirm('¿Eliminar este movimiento?')) { await movStore.remove(id); closeModal(); toast('Movimiento eliminado'); }
 });
 
 // ── Visor de comprobante ──────────────────────────────────────────────────────
 function openImg(src) { if (!src) return; $('#imgFull').src = src; $('#imgViewer').hidden = false; }
-$('#imgClose').addEventListener('click', () => $('#imgViewer').hidden = true);
-$('#imgViewer').addEventListener('click', e => { if (e.target === $('#imgViewer')) $('#imgViewer').hidden = true; });
+$('#imgClose')?.addEventListener('click', () => $('#imgViewer').hidden = true);
+$('#imgViewer')?.addEventListener('click', e => { if (e.target === $('#imgViewer')) $('#imgViewer').hidden = true; });
 
 // ── Gestor de categorías ──────────────────────────────────────────────────────
 const catModal = $('#catModal');
@@ -718,40 +718,40 @@ function renderCatModal() {
     </ul>`;
 
   document.querySelectorAll('input[name="catTipo"]').forEach(r => r.addEventListener('change', e => { catMgrTipo = e.target.value; renderCatModal(); }));
-  $('#addCatBtn').addEventListener('click', async () => {
+  $('#addCatBtn')?.addEventListener('click', async () => {
     const nombre = $('#newCatName').value.trim(); if (!nombre) return;
     await catStore.add({ nombre, tipo: catMgrTipo, color: $('#newCatColor').value, oculta: false });
     toast('Categoría agregada');
   });
   $('#catBody').querySelectorAll('.cat-mgr-row').forEach(row => {
     const id = row.dataset.id, cat = state.categorias.find(c => c.id === id);
-    row.querySelector('[data-act="color"]').addEventListener('click', () => {
+    row.querySelector('[data-act="color"]')?.addEventListener('click', () => {
       const inp = document.createElement('input'); inp.type = 'color'; inp.value = cat.color || '#586878';
       inp.addEventListener('change', () => catStore.update(id, { color: inp.value }));
       inp.click();
     });
-    row.querySelector('[data-act="rename"]').addEventListener('click', () => {
+    row.querySelector('[data-act="rename"]')?.addEventListener('click', () => {
       const nombre = prompt('Nuevo nombre:', cat.nombre); if (nombre && nombre.trim()) catStore.update(id, { nombre: nombre.trim() });
     });
-    row.querySelector('[data-act="bud"]').addEventListener('click', () => {
+    row.querySelector('[data-act="bud"]')?.addEventListener('click', () => {
       const v = prompt(`Presupuesto mensual para "${cat.nombre}" (CLP · 0 para quitar):`, cat.presupuesto || '');
       if (v !== null) catStore.update(id, { presupuesto: Number(v) || 0 });
     });
-    row.querySelector('[data-act="hide"]').addEventListener('click', () => catStore.update(id, { oculta: !cat.oculta }));
-    row.querySelector('[data-act="del"]').addEventListener('click', () => { if (confirm(`¿Eliminar la categoría "${cat.nombre}"?`)) catStore.remove(id); });
+    row.querySelector('[data-act="hide"]')?.addEventListener('click', () => catStore.update(id, { oculta: !cat.oculta }));
+    row.querySelector('[data-act="del"]')?.addEventListener('click', () => { if (confirm(`¿Eliminar la categoría "${cat.nombre}"?`)) catStore.remove(id); });
   });
 }
-$('#catClose').addEventListener('click', () => catModal.hidden = true);
+$('#catClose')?.addEventListener('click', () => catModal.hidden = true);
 catModal.addEventListener('click', e => { if (e.target === catModal) catModal.hidden = true; });
 
 // ── Navegación / eventos globales ──────────────────────────────────────────────
 function go(view) { state.view = view; render(); window.scrollTo({ top: 0 }); content.classList.add('view-anim'); }
 document.querySelectorAll('.nav-item, .bn-item').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
-$('#newBtn').addEventListener('click', () => openModal(null));
-$('#fab').addEventListener('click', () => openQuick());
-$('#cfgBtn').addEventListener('click', openCfg);
-$('#modalClose').addEventListener('click', closeModal);
-$('#cancelBtn').addEventListener('click', closeModal);
+$('#newBtn')?.addEventListener('click', () => openModal(null));
+$('#fab')?.addEventListener('click', () => openQuick());
+$('#cfgBtn')?.addEventListener('click', openCfg);
+$('#modalClose')?.addEventListener('click', closeModal);
+$('#cancelBtn')?.addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { ['#modal','#catModal','#quickModal','#cfgModal','#recModal','#ctaModal','#imgViewer'].forEach(s => { const el = $(s); if (el && !el.hidden) el.hidden = true; }); } });
 
@@ -759,9 +759,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { ['#modal',
 // auto-zoom de inputs ya se evitan con touch-action + viewport + inputs 16px.
 ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
 
-$('#prevMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() - 1, 1); render(); });
-$('#nextMonth').addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() + 1, 1); render(); });
-$('#todayBtn').addEventListener('click', () => { state.ref = new Date(); render(); });
+$('#prevMonth')?.addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() - 1, 1); render(); });
+$('#nextMonth')?.addEventListener('click', () => { state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() + 1, 1); render(); });
+$('#todayBtn')?.addEventListener('click', () => { state.ref = new Date(); render(); });
 
 // La exportación vive ahora dentro de Ajustes (ver renderCfg).
 
@@ -849,7 +849,7 @@ async function exportPDF(movs) {
 function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href); }
 
 // ── Recordatorios / notificaciones ──────────────────────────────────────────────
-$('#bellBtn').addEventListener('click', enableReminders);
+$('#bellBtn')?.addEventListener('click', enableReminders);
 async function enableReminders() {
   if (!('Notification' in window)) return toast('Tu navegador no soporta notificaciones');
   const perm = await Notification.requestPermission();
@@ -881,9 +881,9 @@ function notifyDue(force = false) {
 // ── PWA: install + service worker ──────────────────────────────────────────────
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; $('#installBtn').hidden = false; });
-$('#installBtn').addEventListener('click', async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; $('#installBtn').hidden = true; });
+$('#installBtn')?.addEventListener('click', async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; $('#installBtn').hidden = true; });
 function showUpdateBanner() { $('#updateBanner')?.classList.remove('hidden'); }
-$('#updateReload').addEventListener('click', () => location.reload());
+$('#updateReload')?.addEventListener('click', () => location.reload());
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -916,26 +916,26 @@ function renderQuickChips() {
   $('#qChips').innerHTML = cats.map(c => `<button type="button" class="chip ${c.nombre===quickCat?'sel':''}" data-cat="${esc(c.nombre)}"><span class="cd" style="background:${esc(c.color||'#586878')}"></span>${esc(c.nombre)}</button>`).join('');
   $('#qChips').querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { quickCat = b.dataset.cat; renderQuickChips(); }));
 }
-$('#keypad').addEventListener('click', e => {
+$('#keypad')?.addEventListener('click', e => {
   const k = e.target.dataset.k; if (!k) return;
   if (k === 'back') quickAmt = quickAmt.slice(0, -1);
   else if ((quickAmt + k).replace(/^0+/, '').length <= 12) quickAmt = (quickAmt === '0' ? '' : quickAmt) + k;
   updateQAmount();
 });
 document.querySelectorAll('input[name="qtipo"]').forEach(r => r.addEventListener('change', e => { quickTipo = e.target.value; quickCat = null; renderQuickChips(); }));
-$('#quickSave').addEventListener('click', async () => {
+$('#quickSave')?.addEventListener('click', async () => {
   const monto = Number(quickAmt || 0);
   if (!monto) return toast('Ingresa un monto');
   await movStore.add({ tipo: quickTipo, fecha: todayStr(), moneda: 'CLP', montoOrig: monto, tc: 1, monto, categoria: quickCat, descripcion: '', contraparte: '', documento: '', medio: 'Transferencia', cuenta: defaultCuenta(), estado: 'pagado', iva: true, vence: '', comprobante: '' });
   quickModal.hidden = true; toast('Guardado');
 });
-$('#quickMore').addEventListener('click', () => {
+$('#quickMore')?.addEventListener('click', () => {
   quickModal.hidden = true; openModal(null);
   document.querySelector(`input[name="tipo"][value="${quickTipo}"]`).checked = true;
   fillCategorias(quickTipo, quickCat);
   $('#f_monto').value = quickAmt; updateConvHint();
 });
-$('#quickClose').addEventListener('click', () => quickModal.hidden = true);
+$('#quickClose')?.addEventListener('click', () => quickModal.hidden = true);
 quickModal.addEventListener('click', e => { if (e.target === quickModal) quickModal.hidden = true; });
 
 // ── Ajustes ───────────────────────────────────────────────────────────────────
@@ -984,13 +984,13 @@ function renderCfg() {
       <div class="cfg-row"><div class="cfg-txt"><b>Modo</b><span>${backend?.isCloud ? 'Nube (Firebase) — sincronizado' : 'Local (este dispositivo)'}</span></div></div>
     </div>`;
 
-  $('#cfgTour').addEventListener('click', () => { cfgModal.hidden = true; startTour(); });
+  $('#cfgTour')?.addEventListener('click', () => { cfgModal.hidden = true; startTour(); });
   $('#cfgBody').querySelectorAll('[data-exp]').forEach(b => b.addEventListener('click', () => { cfgModal.hidden = true; doExport(b.dataset.exp); }));
-  $('#cfgDark').addEventListener('change', e => setTheme(e.target.checked));
-  $('#cfgCta').addEventListener('click', openCta);
-  $('#cfgEnableNotif').addEventListener('click', enableReminders);
-  $('#cfgRec').addEventListener('click', openRec);
-  $('#cfgLock').addEventListener('change', async e => {
+  $('#cfgDark')?.addEventListener('change', e => setTheme(e.target.checked));
+  $('#cfgCta')?.addEventListener('click', openCta);
+  $('#cfgEnableNotif')?.addEventListener('click', enableReminders);
+  $('#cfgRec')?.addEventListener('click', openRec);
+  $('#cfgLock')?.addEventListener('change', async e => {
     if (e.target.checked) { const ok = await setPin(); if (!ok) { e.target.checked = false; return; } toast('Bloqueo activado'); }
     else { if (confirm('¿Desactivar el bloqueo?')) { localStorage.removeItem('finanzas_lock'); localStorage.removeItem('finanzas_pinhash'); localStorage.removeItem('finanzas_bio'); toast('Bloqueo desactivado'); } }
     renderCfg();
@@ -1002,7 +1002,7 @@ function renderCfg() {
   [['cfgDue','nDue'],['cfgWeekly','nWeekly'],['cfgF29','nF29'],['cfgBudget','nBudget']].forEach(([id, key]) =>
     $('#' + id).addEventListener('change', e => { prefs[key] = e.target.checked; savePrefs(); }));
 }
-$('#cfgClose').addEventListener('click', () => cfgModal.hidden = true);
+$('#cfgClose')?.addEventListener('click', () => cfgModal.hidden = true);
 cfgModal.addEventListener('click', e => { if (e.target === cfgModal) cfgModal.hidden = true; });
 
 // ── Movimientos recurrentes ────────────────────────────────────────────────────
@@ -1036,7 +1036,7 @@ function renderRec() {
     const tipo = document.querySelector('input[name="rtipo"]:checked').value;
     $('#rCat').innerHTML = visibleCats(tipo).map(c => `<option>${esc(c.nombre)}</option>`).join('');
   }));
-  $('#rAdd').addEventListener('click', async () => {
+  $('#rAdd')?.addEventListener('click', async () => {
     const tipo = document.querySelector('input[name="rtipo"]:checked').value;
     const monto = Number($('#rMonto').value || 0); if (!monto) return toast('Ingresa un monto');
     await recStore.add({ tipo, descripcion: $('#rDesc').value.trim(), monto, dia: Math.min(28, Math.max(1, Number($('#rDia').value || 1))), categoria: $('#rCat').value, moneda: 'CLP', activo: true });
@@ -1044,15 +1044,15 @@ function renderRec() {
   });
   $('#recBody').querySelectorAll('.rec-row').forEach(row => {
     const id = row.dataset.id, r = state.recurrentes.find(x => x.id === id);
-    row.querySelector('[data-act="toggle"]').addEventListener('change', e => recStore.update(id, { activo: e.target.checked }));
-    row.querySelector('[data-act="del"]').addEventListener('click', () => { if (confirm('¿Eliminar este recurrente?')) recStore.remove(id); });
-    row.querySelector('[data-act="now"]').addEventListener('click', async () => {
+    row.querySelector('[data-act="toggle"]')?.addEventListener('change', e => recStore.update(id, { activo: e.target.checked }));
+    row.querySelector('[data-act="del"]')?.addEventListener('click', () => { if (confirm('¿Eliminar este recurrente?')) recStore.remove(id); });
+    row.querySelector('[data-act="now"]')?.addEventListener('click', async () => {
       await movStore.add({ tipo: r.tipo, fecha: todayStr(), moneda: 'CLP', montoOrig: r.monto, tc: 1, monto: r.monto, categoria: r.categoria, descripcion: r.descripcion || r.categoria, contraparte: '', documento: '', medio: 'Transferencia', estado: 'pagado', iva: true, vence: '', comprobante: '', recId: r.id });
       toast('Movimiento creado');
     });
   });
 }
-$('#recClose').addEventListener('click', () => recModal.hidden = true);
+$('#recClose')?.addEventListener('click', () => recModal.hidden = true);
 recModal.addEventListener('click', e => { if (e.target === recModal) recModal.hidden = true; });
 
 // ── Gestor de cuentas ──────────────────────────────────────────────────────────
@@ -1078,18 +1078,18 @@ function renderCtaModal() {
         <button class="icon-btn" data-act="edit" title="Saldo inicial">✎</button>
         <button class="icon-btn" data-act="del" title="Eliminar">🗑</button>
       </div>`).join('') : '<p class="sub" style="color:var(--muted);padding:6px 0">Sin cuentas todavía.</p>'}`;
-  $('#addCtaBtn').addEventListener('click', async () => {
+  $('#addCtaBtn')?.addEventListener('click', async () => {
     const nombre = $('#newCtaName').value.trim(); if (!nombre) return toast('Escribe un nombre');
     await ctaStore.add({ nombre, tipo: $('#newCtaTipo').value, saldoInicial: Number($('#newCtaSaldo').value || 0), color: $('#newCtaColor').value });
     toast('Cuenta agregada');
   });
   $('#ctaBody').querySelectorAll('.acct-row[data-id]').forEach(row => {
     const id = row.dataset.id, c = state.cuentas.find(x => x.id === id);
-    row.querySelector('[data-act="edit"]').addEventListener('click', () => { const v = prompt(`Saldo inicial de "${c.nombre}" (CLP):`, c.saldoInicial || 0); if (v !== null) ctaStore.update(id, { saldoInicial: Number(v) || 0 }); });
-    row.querySelector('[data-act="del"]').addEventListener('click', () => { if (confirm(`¿Eliminar la cuenta "${c.nombre}"? Los movimientos no se borran.`)) ctaStore.remove(id); });
+    row.querySelector('[data-act="edit"]')?.addEventListener('click', () => { const v = prompt(`Saldo inicial de "${c.nombre}" (CLP):`, c.saldoInicial || 0); if (v !== null) ctaStore.update(id, { saldoInicial: Number(v) || 0 }); });
+    row.querySelector('[data-act="del"]')?.addEventListener('click', () => { if (confirm(`¿Eliminar la cuenta "${c.nombre}"? Los movimientos no se borran.`)) ctaStore.remove(id); });
   });
 }
-$('#ctaClose').addEventListener('click', () => ctaModal.hidden = true);
+$('#ctaClose')?.addEventListener('click', () => ctaModal.hidden = true);
 ctaModal.addEventListener('click', e => { if (e.target === ctaModal) ctaModal.hidden = true; });
 
 async function generateRecurrentes() {
@@ -1143,7 +1143,7 @@ function showLock(step) { pinStep = step; pinBuf = ''; pinTemp = ''; $('#lockTit
 function hideLock() { lockScreen.hidden = true; }
 function setPin() { return new Promise(res => { pinCb = res; showLock('set'); }); }
 function maybeLock() { if (LOCK.enabled() && LOCK.pin()) showLock('unlock'); }
-$('#bioBtn').addEventListener('click', async () => { if (await bioVerify()) hideLock(); else toast('No se pudo verificar'); });
+$('#bioBtn')?.addEventListener('click', async () => { if (await bioVerify()) hideLock(); else toast('No se pudo verificar'); });
 
 async function bioRegister() {
   if (!window.PublicKeyCredential) { toast('Este dispositivo no soporta biometría'); return false; }

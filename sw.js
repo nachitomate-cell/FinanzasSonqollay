@@ -1,5 +1,5 @@
 // Service worker — cache de shell para offline.
-const CACHE = 'finanzas-sonqollay-v19';
+const CACHE = 'finanzas-sonqollay-v20';
 const ASSETS = [
   './',
   './index.html',
@@ -72,11 +72,15 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // index.html: network-first para recibir siempre el último deploy
+  // index.html: cache-first (misma versión del shell que app.js/styles.css → sin
+  // desajustes que rompan el JS). Las versiones nuevas llegan al actualizar el SW
+  // y se avisan con el banner "Nueva versión disponible".
   if (url.pathname === '/' || url.pathname.endsWith('/index.html')) {
     e.respondWith((async () => {
-      try { const res = await fetch(e.request, { cache: 'no-cache' }); putCache(e.request, res); return res; }
-      catch { return (await caches.match(e.request)) || (await caches.match('./index.html')) || Response.error(); }
+      const cached = (await caches.match(e.request)) || (await caches.match('./index.html')) || (await caches.match('./'));
+      if (cached) { fetch(e.request).then(res => putCache(e.request, res)).catch(() => {}); return cached; }
+      try { const res = await fetch(e.request); putCache(e.request, res); return res; }
+      catch { return Response.error(); }
     })());
     return;
   }
