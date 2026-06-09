@@ -860,6 +860,11 @@ async function enableReminders() {
   if (perm !== 'granted') return toast('Permiso de notificaciones denegado');
   localStorage.setItem('finanzas_notif', '1');
   $('#bellBtn').classList.add('on');
+  // Notificación de bienvenida (una sola vez) para confirmar que llegan
+  if (!localStorage.getItem('finanzas_welcomed')) {
+    localStorage.setItem('finanzas_welcomed', '1');
+    setTimeout(() => showNotif('Notificaciones activadas ✅', 'Te avisaremos de cobros y pagos por vencer, el resumen semanal y el F29. ¡Listo!', 'welcome'), 600);
+  }
   if (backend?.enablePush) { try { await backend.enablePush(); toast('Recordatorios push activados'); notifyAll(true); return; } catch {} }
   toast('Recordatorios activados');
   notifyAll(true);
