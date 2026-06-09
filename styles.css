@@ -486,6 +486,18 @@ td.amount.out { color: var(--expense); }
   .nb-cta { width: 100%; }
 }
 
+/* ── Tutorial guiado (coachmarks) ── */
+.tour { position: fixed; inset: 0; z-index: 95; }
+.tour-spot { position: absolute; border-radius: 12px; border: 2px solid var(--brand);
+  box-shadow: 0 0 0 9999px rgba(12,18,26,.72); transition: all .3s cubic-bezier(.22,1,.36,1); pointer-events: none; }
+.tour-pop { position: absolute; width: min(300px, calc(100vw - 24px)); background: var(--card); color: var(--ink);
+  border-radius: 14px; box-shadow: var(--shadow-lg); padding: 16px 16px 14px; transition: left .3s, top .3s; }
+.tour-pop .tp-step { font-size: 11.5px; font-weight: 700; color: var(--brand); letter-spacing: .5px; }
+.tour-pop h3 { font-size: 16px; margin: 4px 0 6px; }
+.tour-pop p { font-size: 13.5px; color: var(--steel); margin: 0 0 13px; line-height: 1.45; }
+.tour-pop .tp-actions { display: flex; align-items: center; gap: 8px; }
+.btn-primary.sm { padding: 8px 14px; font-size: 13px; }
+
 /* ── Modo oscuro ── */
 [data-theme="dark"] {
   --ink: #e7edf3; --muted: #92a0af; --line: #28323d; --bg: #0e151d; --card: #18212b;

@@ -932,6 +932,10 @@ function renderCfg() {
   const sw = (id, on, label, desc) => `<div class="cfg-row"><div class="cfg-txt"><b>${label}</b><span>${desc}</span></div><label class="switch"><input type="checkbox" id="${id}" ${on?'checked':''}/><span class="sl"></span></label></div>`;
   $('#cfgBody').innerHTML = `
     <div class="cfg-section">
+      <h4>Ayuda</h4>
+      <div class="cfg-row"><div class="cfg-txt"><b>Cómo usar la app</b><span>Tutorial guiado paso a paso</span></div><button class="btn-ghost sm" id="cfgTour">Ver tutorial</button></div>
+    </div>
+    <div class="cfg-section">
       <h4>Apariencia</h4>
       ${sw('cfgDark', isDark(), 'Modo oscuro', 'Tema oscuro para toda la app')}
     </div>
@@ -961,6 +965,7 @@ function renderCfg() {
       <div class="cfg-row"><div class="cfg-txt"><b>Modo</b><span>${backend?.isCloud ? 'Nube (Firebase) — sincronizado' : 'Local (este dispositivo)'}</span></div></div>
     </div>`;
 
+  $('#cfgTour').addEventListener('click', () => { cfgModal.hidden = true; startTour(); });
   $('#cfgDark').addEventListener('change', e => setTheme(e.target.checked));
   $('#cfgCta').addEventListener('click', openCta);
   $('#cfgEnableNotif').addEventListener('click', enableReminders);
@@ -1205,6 +1210,62 @@ function notifyAll(force) {
   if (prefs.nF29) notifyF29();
   if (prefs.nBudget) notifyBudget();
 }
+
+// ── Tutorial guiado (paso a paso, navegando la app) ─────────────────────────────
+const TOUR = [
+  { center: true, view: 'dashboard', title: '¡Bienvenido! 👋', text: 'Te muestro cómo usar Finanzas Sonqollay en menos de un minuto. Podés saltarlo cuando quieras.' },
+  { sel: '.hero', view: 'dashboard', title: 'Tu balance del mes', text: 'Acá ves el balance, ingresos y egresos del mes, con su equivalente en dólares y UF en vivo.' },
+  { sel: '.acct-row, .acct-total', view: 'dashboard', title: 'Cuentas y saldo', text: 'El saldo disponible de tus cuentas (banco, efectivo, tarjeta). Las gestionás desde Ajustes.' },
+  { sel: '#fab, #newBtn', view: 'dashboard', title: 'Registrar un movimiento', text: 'Tocá el botón “+” para anotar un gasto o ingreso en segundos con el teclado rápido.' },
+  { sel: '[data-view="movimientos"]', view: 'movimientos', title: 'Movimientos', text: 'Acá ves, buscás y filtrás todo. En el teléfono, deslizá una tarjeta para marcarla pagada o eliminarla.' },
+  { sel: '[data-view="flujo"]', view: 'flujo', title: 'Flujo de caja', text: 'La tendencia de tu balance y el flujo mes a mes de todo el año.' },
+  { sel: '[data-view="categorias"]', view: 'categorias', title: 'Análisis', text: 'Gastos e ingresos por categoría, estado de resultados (vs. mes anterior) y tus presupuestos.' },
+  { sel: '#cfgBtn', view: 'dashboard', title: 'Ajustes', text: 'Cuentas, movimientos recurrentes, modo oscuro, bloqueo con PIN/huella y notificaciones.' },
+  { sel: '#bellBtn', view: 'dashboard', title: 'Notificaciones', text: 'Activá los avisos para no perder cobranzas: vencimientos, resumen semanal y recordatorio del F29.' },
+  { center: true, view: 'dashboard', title: '¡Listo! 🎉', text: 'Eso es lo básico. Podés repetir este tutorial cuando quieras desde Ajustes → Ayuda.' },
+];
+let tourIdx = 0;
+const visibleEl = (sel) => { const els = [...document.querySelectorAll(sel)]; return els.find(e => e.offsetParent !== null && e.getBoundingClientRect().width > 0) || null; };
+function startTour() { tourIdx = 0; $('#tour').hidden = false; renderTourStep(); }
+function endTour() { $('#tour').hidden = true; localStorage.setItem('finanzas_tour_done', '1'); }
+function tourGo(d) { const n = tourIdx + d; if (n < 0) return; if (n >= TOUR.length) return endTour(); tourIdx = n; renderTourStep(); }
+function renderTourStep() {
+  const step = TOUR[tourIdx];
+  if (step.view && state.view !== step.view) { go(step.view); content.classList.remove('view-anim'); }
+  requestAnimationFrame(() => positionTour(step));
+}
+function positionTour(step) {
+  const spot = $('#tourSpot'), pop = $('#tourPop');
+  pop.innerHTML = `<div class="tp-step">Paso ${tourIdx + 1} de ${TOUR.length}</div>
+    <h3>${esc(step.title)}</h3><p>${esc(step.text)}</p>
+    <div class="tp-actions">
+      <button class="btn-ghost sm" id="tourSkip">Saltar</button><span class="spacer"></span>
+      ${tourIdx > 0 ? '<button class="btn-ghost sm" id="tourPrev">Atrás</button>' : ''}
+      <button class="btn-primary sm" id="tourNext">${tourIdx === TOUR.length - 1 ? 'Terminar' : 'Siguiente →'}</button>
+    </div>`;
+  $('#tourSkip').onclick = endTour;
+  $('#tourNext').onclick = () => tourGo(1);
+  const pv = $('#tourPrev'); if (pv) pv.onclick = () => tourGo(-1);
+
+  const el = step.center ? null : visibleEl(step.sel);
+  if (!el) {
+    spot.style.opacity = '0';
+    pop.style.left = '50%'; pop.style.top = '50%'; pop.style.transform = 'translate(-50%,-50%)';
+    return;
+  }
+  spot.style.opacity = '1'; pop.style.transform = 'none';
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  setTimeout(() => {
+    const r = el.getBoundingClientRect(), pad = 6;
+    spot.style.left = (r.left - pad) + 'px'; spot.style.top = (r.top - pad) + 'px';
+    spot.style.width = (r.width + pad * 2) + 'px'; spot.style.height = (r.height + pad * 2) + 'px';
+    const pw = pop.offsetWidth, ph = pop.offsetHeight, vw = innerWidth, vh = innerHeight;
+    let top = r.bottom + 12; if (top + ph > vh - 12) top = Math.max(12, r.top - ph - 12);
+    const left = Math.max(12, Math.min(r.left, vw - pw - 12));
+    pop.style.left = left + 'px'; pop.style.top = top + 'px';
+  }, 240);
+}
+window.addEventListener('resize', () => { if (!$('#tour').hidden) positionTour(TOUR[tourIdx]); });
 
 // ── Arranque ────────────────────────────────────────────────────────────────────
 (async function init() {
