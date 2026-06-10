@@ -314,7 +314,11 @@ td.amount.out { color: var(--expense); }
   position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
   background: var(--ink); color: #fff; padding: 11px 18px; border-radius: 10px;
   font-size: 13.5px; z-index: 80; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  display: flex; align-items: center; gap: 9px;
 }
+.toast .spin { width: 15px; height: 15px; flex: 0 0 15px; border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Registro rápido (teclado) ── */
 .q-amount { text-align: center; font-size: 34px; font-weight: 800; letter-spacing: -1px; padding: 4px 0 2px; color: var(--ink); font-variant-numeric: tabular-nums; }

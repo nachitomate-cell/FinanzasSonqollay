@@ -676,9 +676,11 @@ $('#movForm')?.addEventListener('submit', async (e) => {
     comprobante: currentComprobante || '',
   };
   const id = $('#f_id').value;
+  closeModal(); // cerrar al instante; la lista se actualiza sola
+  toast(id ? 'Guardando cambios…' : 'Guardando…', true);
   try {
     if (id) await movStore.update(id, obj); else await movStore.add(obj);
-    closeModal(); toast(id ? 'Movimiento actualizado' : 'Movimiento guardado');
+    toast(id ? 'Movimiento actualizado' : 'Movimiento guardado');
   } catch (err) { toast('Error al guardar: ' + err.message); }
 });
 $('#deleteBtn')?.addEventListener('click', async () => {
@@ -766,7 +768,13 @@ $('#todayBtn')?.addEventListener('click', () => { state.ref = new Date(); render
 // La exportación vive ahora dentro de Ajustes (ver renderCfg).
 
 let toastT;
-function toast(msg) { const el = $('#toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 2600); }
+function toast(msg, loading) {
+  const el = $('#toast');
+  el.innerHTML = (loading ? '<span class="spin"></span>' : '') + esc(msg);
+  el.hidden = false;
+  clearTimeout(toastT);
+  if (!loading) toastT = setTimeout(() => el.hidden = true, 2600); // loading: queda hasta el próximo toast
+}
 
 // ── Exportación: CSV / Excel / PDF ──────────────────────────────────────────────
 function exportSet() {
@@ -926,8 +934,11 @@ document.querySelectorAll('input[name="qtipo"]').forEach(r => r.addEventListener
 $('#quickSave')?.addEventListener('click', async () => {
   const monto = Number(quickAmt || 0);
   if (!monto) return toast('Ingresa un monto');
-  await movStore.add({ tipo: quickTipo, fecha: todayStr(), moneda: 'CLP', montoOrig: monto, tc: 1, monto, categoria: quickCat, descripcion: '', contraparte: '', documento: '', medio: 'Transferencia', cuenta: defaultCuenta(), estado: 'pagado', iva: true, vence: '', comprobante: '' });
-  quickModal.hidden = true; toast('Guardado');
+  const obj = { tipo: quickTipo, fecha: todayStr(), moneda: 'CLP', montoOrig: monto, tc: 1, monto, categoria: quickCat, descripcion: '', contraparte: '', documento: '', medio: 'Transferencia', cuenta: defaultCuenta(), estado: 'pagado', iva: true, vence: '', comprobante: '' };
+  quickModal.hidden = true; // cerrar al instante
+  toast('Guardando…', true);
+  try { await movStore.add(obj); toast('Guardado'); }
+  catch (err) { toast('Error al guardar: ' + err.message); }
 });
 $('#quickMore')?.addEventListener('click', () => {
   quickModal.hidden = true; openModal(null);
